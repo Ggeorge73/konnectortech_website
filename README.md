@@ -63,7 +63,11 @@ The mark is three points joined into one unbroken triangle. Use this story on th
 - **Straight line** = the plan. **Bent line and the bump in the base** = real-world change, absorbed on the way.
 - **Every line reaches its node** = nothing is left half-done.
 
-The logo artwork stays as designed (`favicon.svg` and the inline SVG in `index.html`) — do not redraw it.
+The logo artwork stays as designed (`favicon.svg`) — do not redraw it.
+
+The coming-soon page shows a 3D **logo reveal animation** (8 s, plays once, holds on the finished logo; people with
+reduced motion turned on see the still final frame). The web copy (1280×720 MP4, ~0.7 MB, no audio) and its still frame
+are currently hosted on Higgsfield's CDN — URLs are in `index.html`. Move both into Cloudflare R2 when convenient.
 
 ---
 
