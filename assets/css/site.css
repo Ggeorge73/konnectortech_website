@@ -164,7 +164,7 @@ main, .site-header, .site-footer { position: relative; z-index: 1; }
 .chip { position: absolute; border-radius: var(--r-control); padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; animation: bob 6s ease-in-out infinite; }
 .chip svg { width: 18px; height: 18px; }
 .chip.c1 { top: 8%; left: -2%; }
-.chip.c2 { top: 46%; right: -4%; animation-delay: -2s; }
+.chip.c2 { top: 46%; right: 0; animation-delay: -2s; }
 .chip.c3 { bottom: 6%; left: 8%; animation-delay: -4s; }
 @keyframes bob { 50% { transform: translateY(-10px); } }
 @media (max-width: 480px) { .chip.c1 { left: 0; } .chip.c2 { right: 0; } }
