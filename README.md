@@ -43,6 +43,28 @@ technology is **buying the groceries** — we only do it to serve the meal.
 
 Reference models for tone and structure: Capgemini and Infosys (scale and credibility), CSI Companies (staffing + IT consulting mix).
 
+### Tagline
+
+**Technology delivered. End2End**
+
+- Use **"End2End"** only in the tagline, logo lockups and headlines.
+- In body text and formal documents (bids, capability statements), write **"end-to-end"**.
+
+### Logo story
+
+The mark is three points joined into one unbroken triangle. Use this story on the About page and in brand materials:
+
+> The Konnector mark is three points joined into one unbroken triangle. Each line runs from end to end. Some run
+> straight, like the plan. Some bend, like the real world, with its turns and surprises. Every one still reaches its
+> point. That is how we work: we take ownership from first plan to final handover, connect the people and technology
+> in between, and deliver, end to end.
+
+- **Three nodes** = plan, build, handover (also: people, technology, plans).
+- **Straight line** = the plan. **Bent line and the bump in the base** = real-world change, absorbed on the way.
+- **Every line reaches its node** = nothing is left half-done.
+
+The logo artwork stays as designed (`favicon.svg` and the inline SVG in `index.html`) — do not redraw it.
+
 ---
 
 ## 2. Messaging rules (must follow)
