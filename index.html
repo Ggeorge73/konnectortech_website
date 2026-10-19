@@ -4,170 +4,251 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Konnector Tech — Technology delivered. End2End</title>
-<meta name="description" content="Konnector Tech helps public and private sector organizations deliver technology projects end-to-end: on time, on budget, and to agreed acceptance criteria.">
-<meta name="theme-color" content="#0A0F1E">
+<meta name="description" content="Konnector Tech helps public and private sector organizations deliver technology projects and programs end-to-end: on time, on budget, and to agreed acceptance criteria.">
+<meta name="theme-color" content="#070C18">
+<meta property="og:title" content="Konnector Tech — Technology delivered. End2End">
+<meta property="og:description" content="Project and program delivery, systems integration and flexible expert staffing for public and private sector organizations.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://konnectortech.com/">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Exo+2:wght@600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0A0F1E;
-    --glow: rgba(14, 116, 160, 0.22);
-    --line: rgba(56, 120, 170, 0.18);
-    --node: rgba(56, 140, 200, 0.45);
-    --text: #F5F7FA;
-    --muted: #8A97B0;
-    --faint: #5B6780;
-    --accent: #00C2FF;
-    --accent-hover: #33CEFF;
-    --input-bg: #111827;
-    --input-border: #263043;
-    --ok: #34D399;
-    --err: #F87171;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-  .bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
-  .bg svg { width: 100%; height: 100%; }
-  .bg::after {
-    content: ""; position: absolute; inset: 0;
-    background: radial-gradient(ellipse 45% 40% at 50% 38%, var(--glow), transparent 70%);
-  }
-  main {
-    position: relative; z-index: 1;
-    min-height: 100vh; min-height: 100dvh;
-    display: flex; flex-direction: column; align-items: center;
-    padding: 40px 16px 24px; text-align: center;
-  }
-  .content { flex: 1; display: flex; flex-direction: column; align-items: center; max-width: 820px; width: 100%; }
-  .brand { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #fff; text-decoration: none; width: 100%; }
-  .brand-reveal {
-    display: block; width: min(560px, 100%); aspect-ratio: 16 / 9; object-fit: cover;
-    background: var(--bg);
-    -webkit-mask-image: radial-gradient(ellipse 62% 60% at 50% 48%, #000 55%, transparent 100%);
-            mask-image: radial-gradient(ellipse 62% 60% at 50% 48%, #000 55%, transparent 100%);
-  }
-  .brand span { font-family: "Exo 2", Inter, sans-serif; font-weight: 600; font-size: 28px; letter-spacing: -0.2px; }
-  .eyebrow {
-    margin-top: 36px; color: var(--accent);
-    font-size: 14px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase;
-  }
-  h1 {
-    margin-top: 28px;
-    font-size: clamp(38px, 7vw, 64px); font-weight: 800;
-    line-height: 1.08; letter-spacing: -0.035em;
-  }
-  .lede { margin-top: 24px; max-width: 540px; color: var(--muted); font-size: clamp(16px, 2.2vw, 18px); line-height: 1.55; }
-  form { margin-top: 48px; display: flex; gap: 12px; width: 100%; max-width: 448px; }
-  input[type=email] {
-    flex: 1; min-width: 0; height: 46px; padding: 0 16px;
-    background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px;
-    color: var(--text); font: inherit; font-size: 15px;
-    transition: border-color .15s ease-out;
-  }
-  input[type=email]::placeholder { color: var(--muted); }
-  input[type=email]:focus { outline: none; border-color: var(--accent); }
-  button {
-    height: 46px; padding: 0 24px; border: 0; border-radius: 8px;
-    background: var(--accent); color: #fff; font: inherit; font-size: 15px; font-weight: 600;
-    cursor: pointer; white-space: nowrap; transition: background .15s ease-out;
-  }
-  button:hover { background: var(--accent-hover); }
-  button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
-  button:disabled { opacity: .7; cursor: default; }
-  .msg { margin-top: 14px; min-height: 20px; font-size: 14px; }
-  .msg.ok { color: var(--ok); } .msg.err { color: var(--err); }
-  .hp { position: absolute; left: -9999px; }
-  footer { color: var(--faint); font-size: 13px; padding-top: 32px; }
-  @media (max-width: 480px) {
-    form { flex-direction: column; }
-    input[type=email] { flex: none; }
-    .brand span { font-size: 24px; }
-  }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Manrope:wght@400;500;600;700&family=Exo+2:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/css/site.css">
+<script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
-  <div class="bg" aria-hidden="true">
-    <svg viewBox="0 0 1308 719" preserveAspectRatio="xMidYMid slice">
-      <g stroke="var(--line)" stroke-width="1" fill="none">
-        <line x1="140" y1="0" x2="140" y2="719"/><line x1="1197" y1="0" x2="1197" y2="719"/>
-        <line x1="0" y1="22" x2="1308" y2="22"/><line x1="0" y1="568" x2="1308" y2="568"/>
-        <path d="M140 22 L390 230 L390 380 L140 568"/><path d="M1197 22 L947 230 L947 380 L1197 568"/>
-        <path d="M140 22 L0 250"/><path d="M1197 22 L1308 250"/>
-        <path d="M140 568 L0 340"/><path d="M1197 568 L1308 340"/>
-        <path d="M390 230 L947 230" opacity=".5"/><path d="M390 380 L947 380" opacity=".5"/>
-      </g>
-      <g fill="var(--node)">
-        <circle cx="140" cy="22" r="4"/><circle cx="1197" cy="22" r="4"/>
-        <circle cx="140" cy="568" r="4"/><circle cx="1197" cy="568" r="4"/>
-        <circle cx="390" cy="380" r="3"/><circle cx="947" cy="380" r="3"/>
-      </g>
-    </svg>
-  </div>
+<a class="skip" href="#main">Skip to content</a>
 
-  <main>
-    <div class="content">
-      <a class="brand" href="/" aria-label="Konnector Tech home">
-        <video class="brand-reveal" muted playsinline preload="auto" aria-hidden="true"
-          data-still="https://d2ol7oe51mr4n9.cloudfront.net/user_33zKBBZic513Wr1lj90XpakZ4b3/1d093da8-bc3c-4dcf-afff-3bdccd31482f.jpg">
-          <source src="https://d2ol7oe51mr4n9.cloudfront.net/user_33zKBBZic513Wr1lj90XpakZ4b3/33e1700f-9c46-41ca-a18c-1571d31b28fd.mp4" type="video/mp4">
-        </video>
+<div class="backdrop" aria-hidden="true">
+  <div class="aurora a1"></div>
+  <div class="aurora a2"></div>
+  <div class="aurora a3"></div>
+  <div class="grid-floor"></div>
+</div>
+
+<header class="site-header">
+  <div class="wrap">
+    <nav class="nav glass" aria-label="Main">
+      <a class="brand" href="#top" aria-label="Konnector Tech home">
+        <svg class="glow" viewBox="0 0 70 62" fill="none" stroke="#00C2FF" stroke-width="5" stroke-linecap="round" aria-hidden="true"><circle cx="35" cy="9" r="6.5"/><circle cx="10" cy="51" r="6.5"/><circle cx="60" cy="51" r="6.5"/><path d="M31.5 14.5 L13.5 45.5"/><path d="M38.5 14.5 L43 22 L37 33 L56.5 45.5"/><path d="M16.5 51 L28 51 L31 47 L35 51 L53.5 51"/></svg>
         <span>Konnector Tech</span>
       </a>
+      <button class="nav-toggle glass" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h16"/></svg>
+      </button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#how">How we work</a></li>
+        <li><a href="#sectors">Sectors</a></li>
+        <li><a href="#about">About</a></li>
+      </ul>
+      <a class="btn btn-primary btn-sm" href="#contact">Start a project</a>
+    </nav>
+  </div>
+</header>
 
-      <p class="eyebrow">Technology delivered. End2End</p>
-      <h1>Something great is coming soon</h1>
-      <p class="lede">Konnector Tech helps public and private sector organizations deliver technology projects end-to-end: on time, on budget, and to agreed acceptance criteria.</p>
-
-      <form id="notify" novalidate>
-        <label for="email" class="hp">Email address</label>
-        <input id="email" name="email" type="email" placeholder="Enter your email address" autocomplete="email" required>
-        <input class="hp" name="company" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <button type="submit">Notify Me</button>
-      </form>
-      <p class="msg" id="msg" role="status" aria-live="polite"></p>
+<main id="main">
+  <!-- Hero -->
+  <section id="top" class="wrap hero">
+    <div class="hero-copy">
+      <p class="eyebrow rise"><span class="dot"></span>Technology delivered. End2End</p>
+      <h1 class="rise r2">From plan to <span class="grad">working result.</span></h1>
+      <p class="lede rise r3">We help public and private sector organizations deliver critical technology projects and programs on time, on budget, and to agreed acceptance criteria — with one accountable partner from first plan to final handover.</p>
+      <div class="ctas rise r4">
+        <a class="btn btn-primary" href="#contact">Start a project
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        <a class="btn btn-ghost glass" href="#how">See how we deliver</a>
+      </div>
     </div>
-    <footer>© <span id="yr">2026</span> Konnector LLC. All rights reserved.</footer>
-  </main>
 
-<script>
-  document.getElementById('yr').textContent = new Date().getFullYear();
-  // Logo reveal: plays once and holds on the finished logo; reduced-motion users see the still logo (poster).
-  const reveal = document.querySelector('.brand-reveal');
-  if (reveal) {
-    const still = () => { reveal.poster = reveal.dataset.still; };
-    reveal.addEventListener('error', still, true);
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) still();
-    else reveal.play().catch(still);
-  }
-  const form = document.getElementById('notify'), msg = document.getElementById('msg');
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = form.email.value.trim();
-    msg.className = 'msg';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      msg.textContent = 'Please enter a valid email address.'; msg.classList.add('err'); return;
-    }
-    const btn = form.querySelector('button'); btn.disabled = true; btn.textContent = 'Sending…';
-    try {
-      const r = await fetch('/api/notify', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, company: form.company.value })
-      });
-      if (!r.ok) throw new Error();
-      form.reset(); msg.textContent = "Thanks! We'll let you know when we launch."; msg.classList.add('ok');
-    } catch {
-      msg.textContent = 'Something went wrong. Please try again.'; msg.classList.add('err');
-    } finally { btn.disabled = false; btn.textContent = 'Notify Me'; }
-  });
-</script>
+    <div class="hero-visual">
+      <div class="orb">
+        <div class="orbit o1" aria-hidden="true"></div>
+        <div class="orbit o2" aria-hidden="true"></div>
+        <div class="orb-core glass sheen">
+          <div class="globe" aria-hidden="true"></div>
+          <svg class="logo-draw glow breathe" viewBox="-4 -4 78 70" fill="none" stroke="#00C2FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Konnector logo: three points joined end to end">
+            <circle class="d1" pathLength="1" cx="35" cy="9" r="6.5"/>
+            <circle class="d2" pathLength="1" cx="10" cy="51" r="6.5"/>
+            <circle class="d3" pathLength="1" cx="60" cy="51" r="6.5"/>
+            <path class="d4" pathLength="1" d="M31.5 14.5 L13.5 45.5"/>
+            <path class="d5" pathLength="1" d="M16.5 51 L28 51 L31 47 L35 51 L53.5 51"/>
+            <path class="d6" pathLength="1" d="M38.5 14.5 L43 22 L37 33 L56.5 45.5"/>
+          </svg>
+        </div>
+        <div class="chip glass c1" aria-hidden="true">
+          <svg viewBox="0 0 18 18" fill="none" stroke="#00C2FF" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="9" r="7"/><path d="M9 5v4l3 2"/></svg>On time
+        </div>
+        <div class="chip glass c2" aria-hidden="true">
+          <svg viewBox="0 0 18 18" fill="none" stroke="#00C2FF" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="14" height="10" rx="2"/><path d="M2 8h14"/></svg>On budget
+        </div>
+        <div class="chip glass c3" aria-hidden="true">
+          <svg viewBox="0 0 18 18" fill="none" stroke="#00C2FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5l4 4 8-9"/></svg>Accepted
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Promise -->
+  <section class="wrap section promise" aria-labelledby="promise-title">
+    <h2 id="promise-title" class="sr-only">Our promise</h2>
+    <div class="grid">
+      <article class="card glass lift reveal">
+        <p class="kicker">01 · Time</p>
+        <h3>On time</h3>
+        <p>A plan everyone agrees up front, and delivery leadership that keeps every milestone honest.</p>
+      </article>
+      <article class="card glass lift reveal">
+        <p class="kicker">02 · Cost</p>
+        <h3>On budget</h3>
+        <p>Flexible expert capacity that scales with the work — without the cost of permanent headcount.</p>
+      </article>
+      <article class="card glass lift reveal">
+        <p class="kicker">03 · Scope</p>
+        <h3>To acceptance criteria</h3>
+        <p>We test against what you agreed, so “done” means the system works the way you need it to.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- Services -->
+  <section id="services" class="wrap section" aria-labelledby="services-title">
+    <p class="eyebrow">What we do</p>
+    <h2 id="services-title" class="h2" style="margin-bottom: 44px">One accountable partner for the whole delivery.</h2>
+    <div class="grid">
+      <article class="core glass feature lift sheen reveal">
+        <div class="core-copy">
+          <p class="kicker">Core service</p>
+          <h3>Project &amp; program delivery</h3>
+          <p>Delivery leadership for the initiatives that matter most — project and program management, Agile and SAFe delivery, and PMO support that takes work from plan to working result.</p>
+        </div>
+        <ul class="pills">
+          <li class="glass">Program management</li>
+          <li class="glass">Agile &amp; SAFe delivery</li>
+          <li class="glass">PMO support</li>
+          <li class="glass">Risk &amp; governance</li>
+        </ul>
+      </article>
+      <article class="card glass lift reveal">
+        <svg class="icon glow" viewBox="0 0 40 40" fill="none" stroke="#00C2FF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="5" width="12" height="12" rx="3"/><rect x="23" y="23" width="12" height="12" rx="3"/><path d="M17 11h6a6 6 0 0 1 6 6v6"/></svg>
+        <h3>Systems implementation &amp; integration</h3>
+        <p>Configuring, connecting and rolling out systems so they work together from day one.</p>
+      </article>
+      <article class="card glass lift reveal">
+        <svg class="icon glow" viewBox="0 0 40 40" fill="none" stroke="#00C2FF" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="14" cy="14" r="5"/><circle cx="28" cy="16" r="4"/><path d="M5 33c1-6 5-9 9-9s8 3 9 9M23 29c1-4 3-6 5-6s5 2 6 6"/></svg>
+        <h3>Flexible expert staffing</h3>
+        <p>Skilled consultants added to your team, scaled up or down as the project needs.</p>
+      </article>
+      <article class="card glass lift reveal">
+        <svg class="icon glow" viewBox="0 0 40 40" fill="none" stroke="#00C2FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 14l14-8 14 8v12l-14 8-14-8z"/><path d="M6 14l14 8 14-8M20 22v12"/></svg>
+        <h3>Technology sourcing</h3>
+        <p>Where a project needs it, we source and integrate the technology — so you deal with one partner, not many vendors.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- How we deliver -->
+  <section id="how" class="wrap section" aria-labelledby="how-title">
+    <div class="delivery glass reveal">
+      <p class="eyebrow">How we deliver</p>
+      <h2 id="how-title" class="h2">End-to-end, one unbroken line.</h2>
+      <p class="lead">Real projects bend. Ours still arrive. Every stage hands cleanly to the next, and we stay accountable the whole way.</p>
+      <div class="line-wrap">
+        <div class="track" aria-hidden="true"><div class="pulse"></div></div>
+        <ol class="steps">
+          <li><div class="node glass" aria-hidden="true">1</div><h3>Discover</h3><p>Goals, constraints and what “accepted” means.</p></li>
+          <li><div class="node glass" aria-hidden="true">2</div><h3>Plan</h3><p>Scope, schedule, budget and team, agreed up front.</p></li>
+          <li><div class="node glass" aria-hidden="true">3</div><h3>Build &amp; integrate</h3><p>Configure, connect and adapt as reality changes.</p></li>
+          <li><div class="node glass" aria-hidden="true">4</div><h3>Test &amp; accept</h3><p>Proven against the criteria you agreed.</p></li>
+          <li><div class="node glass" aria-hidden="true">5</div><h3>Hand over</h3><p>Working system, trained people, clean close.</p></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sectors -->
+  <section id="sectors" class="wrap section" aria-labelledby="sectors-title">
+    <p class="eyebrow">Who we serve</p>
+    <h2 id="sectors-title" class="h2" style="margin-bottom: 44px">Public and private sector.</h2>
+    <div class="grid">
+      <article class="sector glass lift reveal">
+        <h3>Public sector</h3>
+        <p>State agencies, cities, counties, schools and public authorities modernizing the systems people rely on.</p>
+        <a href="#contact" data-sector="Public sector">Talk to us about a public sector project →</a>
+      </article>
+      <article class="sector private glass lift reveal">
+        <h3>Private sector</h3>
+        <p>Mid-size and enterprise teams running technology programs that have to land — whatever the industry.</p>
+        <a href="#contact" data-sector="Private sector">Talk to us about a private sector project →</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- About / mark story -->
+  <section id="about" class="wrap section mark-story" aria-labelledby="about-title">
+    <div class="art reveal">
+      <svg class="glow breathe" viewBox="-4 -4 78 70" fill="none" stroke="#00C2FF" stroke-width="3" stroke-linecap="round" aria-hidden="true"><circle cx="35" cy="9" r="6.5"/><circle cx="10" cy="51" r="6.5"/><circle cx="60" cy="51" r="6.5"/><path d="M31.5 14.5 L13.5 45.5"/><path d="M38.5 14.5 L43 22 L37 33 L56.5 45.5"/><path d="M16.5 51 L28 51 L31 47 L35 51 L53.5 51"/></svg>
+    </div>
+    <div class="copy reveal">
+      <p class="eyebrow">Our mark</p>
+      <h2 id="about-title">Every line reaches its point.</h2>
+      <p>Three points joined into one unbroken triangle. Some lines run straight, like the plan. Some bend, like the real world, with its turns and surprises. Every one still arrives. That is how we work: we take ownership from first plan to final handover, connect the people and technology in between, and deliver, end to end.</p>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="wrap section" aria-labelledby="contact-title">
+    <div class="contact glass feature sheen reveal">
+      <div class="contact-head">
+        <h2 id="contact-title">Have a project that has to land?</h2>
+        <p>Tell us what you need delivered. We will come back with a plan.</p>
+      </div>
+      <form class="form" id="contact-form" novalidate>
+        <div class="field">
+          <label for="f-name">Your name</label>
+          <input id="f-name" name="name" autocomplete="name" required maxlength="120">
+        </div>
+        <div class="field">
+          <label for="f-email">Work email</label>
+          <input id="f-email" name="email" type="email" autocomplete="email" required maxlength="254">
+        </div>
+        <div class="field full">
+          <label for="f-org">Organization</label>
+          <input id="f-org" name="organization" autocomplete="organization" maxlength="160">
+        </div>
+        <fieldset class="field full">
+          <legend>Sector</legend>
+          <div class="seg">
+            <label><input type="radio" name="sector" value="Public sector"><span>Public sector</span></label>
+            <label><input type="radio" name="sector" value="Private sector"><span>Private sector</span></label>
+            <label><input type="radio" name="sector" value="Not sure yet" checked><span>Not sure yet</span></label>
+          </div>
+        </fieldset>
+        <div class="field full">
+          <label for="f-msg">What do you need delivered?</label>
+          <textarea id="f-msg" name="message" required maxlength="4000" placeholder="A few lines on the project, timeline and where you are today."></textarea>
+        </div>
+        <input class="hp" name="company_site" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <p class="form-msg" id="form-msg" role="status" aria-live="polite"></p>
+        <div class="form-foot">
+          <p>Or email <a href="mailto:george@konnectortech.com">george@konnectortech.com</a></p>
+          <button class="btn btn-primary" type="submit">Send enquiry</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="mark">Konnector Tech</span>
+    <span>Technology delivered. End2End</span>
+    <span class="legal">© <span id="yr">2026</span> Konnector LLC · Atlanta, Georgia</span>
+  </div>
+</footer>
+
+<script src="/assets/js/site.js" defer></script>
 </body>
 </html>

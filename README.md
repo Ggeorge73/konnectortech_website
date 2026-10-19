@@ -86,11 +86,11 @@ are currently hosted on Higgsfield's CDN — URLs are in `index.html`. Move both
 
 ## 3. Site plan
 
-### Phase 0 — Coming soon (live now)
+### Phase 0 — Coming soon (replaced by the homepage in Phase 1)
 - `index.html` — holding page with a "Notify Me" email sign-up.
 - Update the lede to match the positioning statement above when convenient.
 
-### Phase 1 — Launch site
+### Phase 1 — Launch site (homepage built on branch `site-v1`; separate pages next)
 | Page | Purpose / key content |
 | --- | --- |
 | **Home** | Positioning headline, the "we deliver" promise, 3–4 offer cards, how we work, public/private sector split, call to action. |
@@ -116,9 +116,14 @@ are currently hosted on Higgsfield's CDN — URLs are in `index.html`. Move both
 
 Static site, hosted on **Cloudflare Pages** (moved from Vercel, Oct 2026). No build step; build output directory is `/`.
 
-- `index.html` — the page
+- `index.html` — the homepage ("Glass Delivery Line" design: hero, promise, services, how we deliver, sectors, logo story, contact)
+- `assets/css/site.css` — the whole design system: colour tokens, glass panels, motion, responsive rules
+- `assets/js/site.js` — mobile menu, scroll reveals, contact form (no libraries)
+- `functions/api/contact.js` — contact form handler (Cloudflare Pages Function at `/api/contact`). Emails each enquiry
+  to `NOTIFY_TO` via Resend with Reply-To set to the sender; uses the same `RESEND_API_KEY` / `NOTIFY_TO` / `NOTIFY_FROM`
+  variables as the sign-up function. Without them, enquiries still appear in the function's real-time logs.
 - `_headers` — security headers (Cloudflare Pages format)
-- `functions/api/notify.js` — "Notify Me" sign-ups (Cloudflare Pages Function at `/api/notify`).
+- `functions/api/notify.js` — (coming-soon page) "Notify Me" sign-ups (Cloudflare Pages Function at `/api/notify`).
   Set `RESEND_API_KEY` (secret) and `NOTIFY_TO` (comma-separated) under Pages → Settings → Variables and Secrets
   to get each sign-up by email; optional `NOTIFY_FROM`. Without them, sign-ups still appear in the function's real-time logs.
 - Images and larger site files go in **Cloudflare R2**.
