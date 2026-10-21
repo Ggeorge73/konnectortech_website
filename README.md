@@ -117,6 +117,8 @@ Static site, hosted on **Cloudflare Pages** (moved from Vercel, Oct 2026). No bu
 - `index.html` — the homepage ("Glass Delivery Line" design: hero, promise, services, how we deliver, sectors, logo story, contact)
 - `assets/css/site.css` — the whole design system: colour tokens, glass panels, motion, responsive rules
 - `assets/js/site.js` — mobile menu, scroll reveals, contact form (no libraries)
+- **When you change `site.css` or `site.js`, bump the `?v=` date on their links in `index.html`** (e.g. `?v=20261021`).
+  Browsers keep old copies of files whose address hasn't changed; a new `?v=` makes them fetch the latest one.
 - `functions/api/contact.js` — contact form handler (Cloudflare Pages Function at `/api/contact`). Emails each enquiry
   to `NOTIFY_TO` via Resend with Reply-To set to the sender; uses the same `RESEND_API_KEY` / `NOTIFY_TO` / `NOTIFY_FROM`
   variables listed below. Every enquiry is also saved to the `ENQUIRIES` KV namespace, and each visitor is limited to
