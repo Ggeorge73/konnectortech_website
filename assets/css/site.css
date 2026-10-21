@@ -149,6 +149,7 @@ main, .site-header, .site-footer { position: relative; z-index: 1; }
   .nav { flex-wrap: wrap; gap: 12px; }
   .nav-toggle { display: inline-flex; }
   .theme-toggle { order: 0; }
+  .nav-toggle { order: 1; }
   .nav .btn-sm { display: none; }
   .nav-links { display: none; width: 100%; flex-direction: column; gap: 0; padding: 6px 0 4px; }
   .nav.open .nav-links { display: flex; }
