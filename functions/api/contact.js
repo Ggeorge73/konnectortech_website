@@ -3,6 +3,9 @@
 //   1. saved to the ENQUIRIES KV namespace (if bound), so no lead is lost even when email fails;
 //   2. emailed to NOTIFY_TO via Resend (if RESEND_API_KEY and NOTIFY_TO are set), with Reply-To set to the sender;
 //   3. written to the function log (Pages → Functions → Real-time logs).
+// Submissions that fill the hidden spam-trap field are not emailed, but are still saved under a `suspect:` key,
+// so a real enquiry caught by browser autofill can be recovered from KV.
+// (The trap field used to be named `company_site`; browsers autofilled it with the visitor's company.)
 // The same KV namespace also limits each visitor to RATE_LIMIT enquiries per RATE_WINDOW seconds.
 const json = (body, status = 200, headers = {}) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...headers } });
@@ -57,7 +60,6 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'Invalid request' }, 400);
   }
   if (!data || typeof data !== 'object') return json({ error: 'Invalid request' }, 400);
-  if (data.company_site) return json({ ok: true }); // honeypot: silently drop bots
 
   const name = clean(data.name, 120);
   const email = clean(data.email, 254);
@@ -70,6 +72,7 @@ export async function onRequestPost({ request, env }) {
   if (message.length < 10) return json({ error: 'Message is too short' }, 400);
 
   const receivedAt = new Date().toISOString();
+  const suspect = Boolean(clean(data.kt_hp, 200)); // spam trap: real visitors never see this field
   const text = [
     `Name: ${name}`,
     `Email: ${email}`,
@@ -80,18 +83,20 @@ export async function onRequestPost({ request, env }) {
     message,
   ].join('\n');
 
-  console.log(`[contact] ${name} <${email}> · ${organization || '—'} · ${sector}`);
+  console.log(`[contact]${suspect ? ' [suspect]' : ''} ${name} <${email}> · ${organization || '—'} · ${sector}`);
 
   let saved = false;
   if (kv) {
     try {
       const record = { receivedAt, name, email, organization, sector, message };
-      await kv.put(`enquiry:${receivedAt}:${crypto.randomUUID()}`, JSON.stringify(record));
+      await kv.put(`${suspect ? 'suspect' : 'enquiry'}:${receivedAt}:${crypto.randomUUID()}`, JSON.stringify(record));
       saved = true;
     } catch (err) {
       console.error('[contact] KV save failed', err);
     }
   }
+
+  if (suspect) return json({ ok: true }); // likely a bot: saved for review (if KV is bound), not emailed
 
   const emailed = await sendEmail(env, { name, email, organization, sector, text });
   if (emailed === 'not_configured') console.log('[contact] email not configured; enquiry body follows\n' + text);

@@ -138,7 +138,9 @@ Do these once, before the contact form goes live:
 
 1. **Save enquiries:** Workers & Pages → KV → create a namespace (e.g. `konnector-enquiries`). Then in the Pages project →
    Settings → Bindings, add a **KV namespace** binding named `ENQUIRIES` pointing to it (Production and Preview).
-   Enquiries are stored as `enquiry:<timestamp>:<id>` keys you can browse in the KV dashboard. The same namespace holds
+   Enquiries are stored as `enquiry:<timestamp>:<id>` keys you can browse in the KV dashboard (KV → namespace → KV Pairs).
+   Submissions that filled the hidden spam-trap field are kept as `suspect:<timestamp>:<id>` and not emailed — check
+   them now and then in case a real enquiry was caught. The same namespace holds
    short-lived `rl:<ip>` rate-limit counters.
 2. **Email them:** in Pages → Settings → Variables and Secrets set `RESEND_API_KEY` (secret) and `NOTIFY_TO`
    (comma-separated, e.g. `george@konnectortech.com`).
