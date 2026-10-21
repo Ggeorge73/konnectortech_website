@@ -1,7 +1,7 @@
 # Konnector Tech website
 
 The public website for **Konnector LLC** (Georgia), served at **konnectortech.com**.
-Right now it is a single "coming soon" page. This README is the plan for the full site — read it before building anything.
+Right now it is a single-page homepage (Phase 1 in progress). This README is the plan for the full site — read it before building anything.
 
 ---
 
@@ -65,9 +65,9 @@ The mark is three points joined into one unbroken triangle. Use this story on th
 
 The logo artwork stays as designed (`favicon.svg`) — do not redraw it.
 
-The coming-soon page shows a 3D **logo reveal animation** (8 s, plays once, holds on the finished logo; people with
-reduced motion turned on see the still final frame). The web copy (1280×720 MP4, ~0.7 MB, no audio) and its still frame
-are currently hosted on Higgsfield's CDN — URLs are in `index.html`. Move both into Cloudflare R2 when convenient.
+A 3D **logo reveal animation** (8 s MP4, 1280×720, no audio) was made for the old coming-soon page. The homepage does
+not use it; it draws the logo with SVG instead. If the video is brought back, host it in Cloudflare R2 and add R2's
+domain to `media-src` in `_headers`.
 
 ---
 
@@ -86,9 +86,7 @@ are currently hosted on Higgsfield's CDN — URLs are in `index.html`. Move both
 
 ## 3. Site plan
 
-### Phase 0 — Coming soon (replaced by the homepage in Phase 1)
-- `index.html` — holding page with a "Notify Me" email sign-up.
-- Update the lede to match the positioning statement above when convenient.
+### Phase 0 — Coming soon (done; replaced by the homepage)
 
 ### Phase 1 — Launch site (homepage built on branch `site-v1`; separate pages next)
 | Page | Purpose / key content |
@@ -121,18 +119,39 @@ Static site, hosted on **Cloudflare Pages** (moved from Vercel, Oct 2026). No bu
 - `assets/js/site.js` — mobile menu, scroll reveals, contact form (no libraries)
 - `functions/api/contact.js` — contact form handler (Cloudflare Pages Function at `/api/contact`). Emails each enquiry
   to `NOTIFY_TO` via Resend with Reply-To set to the sender; uses the same `RESEND_API_KEY` / `NOTIFY_TO` / `NOTIFY_FROM`
-  variables as the sign-up function. Without them, enquiries still appear in the function's real-time logs.
-- `_headers` — security headers (Cloudflare Pages format)
-- `functions/api/notify.js` — (coming-soon page) "Notify Me" sign-ups (Cloudflare Pages Function at `/api/notify`).
-  Set `RESEND_API_KEY` (secret) and `NOTIFY_TO` (comma-separated) under Pages → Settings → Variables and Secrets
-  to get each sign-up by email; optional `NOTIFY_FROM`. Without them, sign-ups still appear in the function's real-time logs.
+  variables listed below. Every enquiry is also saved to the `ENQUIRIES` KV namespace, and each visitor is limited to
+  5 enquiries per 10 minutes.
+- `_headers` — security headers (Cloudflare Pages format), including HSTS and a Content Security Policy. If you change the
+  small inline script in `index.html`'s `<head>`, update its `sha256-…` hash in `script-src`; if you add a third-party
+  script, font, image host or embed, add its domain to the matching directive or the browser will block it.
+- Dark is the default theme. The sun/moon button in the header switches to light, and the choice is remembered in the
+  visitor's browser (`localStorage` key `theme`). All colours are tokens at the top of `site.css`; the light values are
+  in the `:root[data-theme="light"]` block.
 - Images and larger site files go in **Cloudflare R2**.
 
 Preview locally: `npx wrangler pages dev .`
 
+### Contact form setup (Cloudflare dashboard)
+Do these once, before the contact form goes live:
+
+1. **Save enquiries:** Workers & Pages → KV → create a namespace (e.g. `konnector-enquiries`). Then in the Pages project →
+   Settings → Bindings, add a **KV namespace** binding named `ENQUIRIES` pointing to it (Production and Preview).
+   Enquiries are stored as `enquiry:<timestamp>:<id>` keys you can browse in the KV dashboard. The same namespace holds
+   short-lived `rl:<ip>` rate-limit counters.
+2. **Email them:** in Pages → Settings → Variables and Secrets set `RESEND_API_KEY` (secret) and `NOTIFY_TO`
+   (comma-separated, e.g. `george@konnectortech.com`).
+3. **Sender address:** in Resend → Domains, add and verify `konnectortech.com` (add the DNS records it shows in
+   Cloudflare as **DNS only**). The function sends from `website@konnectortech.com` by default; set `NOTIFY_FROM` to
+   change it. Resend's test sender (`onboarding@resend.dev`) only delivers to the Resend account owner, so do not use it.
+4. **Rate limit at the edge (recommended):** Security → WAF → Rate limiting rules → match URI path starts with
+   `/api/`, method `POST`, 10 requests per 1 minute per IP → Block. This stops floods before they reach the function.
+
+If neither KV nor email is configured, the form shows an error asking visitors to email us directly, so leads are
+never silently dropped.
+
 Guidelines for developers:
 - Keep it fast and simple: plain HTML/CSS/JS unless a page genuinely needs more. If a framework is introduced, document the build step here.
-- Mobile-first, accessible (WCAG 2.1 AA), light and dark mode.
+- Mobile-first, accessible (WCAG 2.1 AA), dark by default with a light-mode toggle.
 - Every page needs a unique `<title>` and meta description.
 
 ### DNS & email
