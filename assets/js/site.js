@@ -3,6 +3,26 @@
   const yr = document.getElementById('yr');
   if (yr) yr.textContent = new Date().getFullYear();
 
+  // Theme toggle: dark by default; the visitor's choice is remembered (the <head> script applies it before paint)
+  const root = document.documentElement;
+  const themeBtn = document.querySelector('.theme-toggle');
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const applyTheme = (theme) => {
+    root.setAttribute('data-theme', theme);
+    if (themeMeta) themeMeta.content = theme === 'light' ? '#F4F7FB' : '#070C18';
+    if (themeBtn) {
+      const label = theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
+      themeBtn.setAttribute('aria-label', label);
+      themeBtn.title = label;
+    }
+  };
+  applyTheme(root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+  if (themeBtn) themeBtn.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyTheme(next);
+    try { localStorage.setItem('theme', next); } catch { /* private mode: choice lasts for this page only */ }
+  });
+
   // Mobile menu
   const nav = document.querySelector('.nav');
   const toggle = document.querySelector('.nav-toggle');

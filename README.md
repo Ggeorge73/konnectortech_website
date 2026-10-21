@@ -124,8 +124,9 @@ Static site, hosted on **Cloudflare Pages** (moved from Vercel, Oct 2026). No bu
 - `_headers` — security headers (Cloudflare Pages format), including HSTS and a Content Security Policy. If you change the
   small inline script in `index.html`'s `<head>`, update its `sha256-…` hash in `script-src`; if you add a third-party
   script, font, image host or embed, add its domain to the matching directive or the browser will block it.
-- Light and dark themes follow the visitor's system setting. All colours are tokens at the top of `site.css`; the light
-  values are in the `prefers-color-scheme: light` block.
+- Dark is the default theme. The sun/moon button in the header switches to light, and the choice is remembered in the
+  visitor's browser (`localStorage` key `theme`). All colours are tokens at the top of `site.css`; the light values are
+  in the `:root[data-theme="light"]` block.
 - Images and larger site files go in **Cloudflare R2**.
 
 Preview locally: `npx wrangler pages dev .`
@@ -150,7 +151,7 @@ never silently dropped.
 
 Guidelines for developers:
 - Keep it fast and simple: plain HTML/CSS/JS unless a page genuinely needs more. If a framework is introduced, document the build step here.
-- Mobile-first, accessible (WCAG 2.1 AA), light and dark mode.
+- Mobile-first, accessible (WCAG 2.1 AA), dark by default with a light-mode toggle.
 - Every page needs a unique `<title>` and meta description.
 
 ### DNS & email
