@@ -53,6 +53,7 @@
       btn.disabled = true; btn.textContent = 'Sending…'; say('');
       try {
         const r = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        if (r.status === 429) return say('You have sent several messages in a short time. Please try again in a few minutes, or email george@konnectortech.com.', 'err');
         if (!r.ok) throw new Error('send failed');
         form.reset();
         say("Thank you — we've received your enquiry and will be in touch shortly.", 'ok');
