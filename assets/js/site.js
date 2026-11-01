@@ -3,22 +3,23 @@
   const yr = document.getElementById('yr');
   if (yr) yr.textContent = new Date().getFullYear();
 
-  // Theme toggle: dark by default; the visitor's choice is remembered (the <head> script applies it before paint)
+  // Theme toggle: light (paper) by default; the visitor's choice is remembered
+  // (the <head> script applies it before paint so there is no flash)
   const root = document.documentElement;
   const themeBtn = document.querySelector('.theme-toggle');
   const themeMeta = document.querySelector('meta[name="theme-color"]');
   const applyTheme = (theme) => {
     root.setAttribute('data-theme', theme);
-    if (themeMeta) themeMeta.content = theme === 'light' ? '#F4F7FB' : '#070C18';
+    if (themeMeta) themeMeta.content = theme === 'dark' ? '#0C1118' : '#F4F2EC';
     if (themeBtn) {
-      const label = theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
+      const label = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
       themeBtn.setAttribute('aria-label', label);
       themeBtn.title = label;
     }
   };
-  applyTheme(root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+  applyTheme(root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
   if (themeBtn) themeBtn.addEventListener('click', () => {
-    const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     applyTheme(next);
     try { localStorage.setItem('theme', next); } catch { /* private mode: choice lasts for this page only */ }
   });
@@ -70,7 +71,7 @@
       if (data.message.length < 10) return say('Please tell us a little about the project.', 'err'), form.elements.namedItem('message').focus();
 
       const btn = form.querySelector('button[type="submit"]');
-      btn.disabled = true; btn.textContent = 'Sending…'; say('');
+      btn.disabled = true; say('');
       try {
         const r = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         if (r.status === 429) return say('You have sent several messages in a short time. Please try again in a few minutes, or email george@konnectortech.com.', 'err');
@@ -80,7 +81,7 @@
       } catch {
         say('Something went wrong sending your message. Please email george@konnectortech.com.', 'err');
       } finally {
-        btn.disabled = false; btn.textContent = 'Send enquiry';
+        btn.disabled = false;
       }
     });
   }
