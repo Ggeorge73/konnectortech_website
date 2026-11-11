@@ -92,8 +92,15 @@ function rack(b: BoxBatch, side: -1 | 1, z: number, sys: number, seed: number) {
   }
 }
 
-export function buildWorld() {
+/** corridor = false builds only the skyline: used once the Blender-built corridor has loaded. */
+export function buildWorld(corridor = true) {
   const b = new BoxBatch();
+  if (corridor) buildCorridor(b);
+  buildSkyline(b);
+  return b.build();
+}
+
+function buildCorridor(b: BoxBatch) {
 
   // Shell: floor, ceiling and wall panels in 2 m bays
   for (let z = 3; z > CORRIDOR_END; z -= 2) {
@@ -149,6 +156,9 @@ export function buildWorld() {
     b.add(1.72, 0.2, z0 - 0.3, 0.4, 0.4, 0.4, { shade: 0.18, sys }); // box of tapes
   }
 
+}
+
+function buildSkyline(b: BoxBatch) {
   // Blueprint skyline at the end of the track. Public mission on the left, private enterprise on the right.
   const Z = -112;
   const P = SKY_SYS.public, V = SKY_SYS.private;
@@ -182,8 +192,6 @@ export function buildWorld() {
   for (let i = 0; i < 4; i++) b.add(2.5 + i * 1.4, 2.7, Z + 6.5, 0.9, 0.6, 3.2, { sys: V });
   b.add(8.3, 3.2, Z + 6, 0.7, 6.4, 0.7, { sys: V });
   b.add(9.3, 2.6, Z + 6.8, 0.6, 5.2, 0.6, { sys: V });
-
-  return b.build();
 }
 
 /** The one line. From the sphere's resting place, through all five systems, down the track, to the fork. */

@@ -7,6 +7,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { createDirector, CENTRE, type Director, type Tier } from './director';
 import { createScrollTime, type ScrollTime } from './scrollTime';
 import { BLOCK_Z, buildWorld, FORK, GATE_Z, subCurve } from './world';
+import { loadRoom, type RoomAssets } from './room';
 import { buildMechanism, buildPlates, buildSeamTriangle, MARK_RING, MARK_TUBE, NODES, R } from './sphere';
 import { AMBER, CHROME_FRAG, CHROME_VERT, clamp, CYAN, glowTexture, GRID_FRAG, GRID_VERT, LINK_FRAG, LINK_VERT, mix, NIGHT, ROOM_FRAG, ROOM_VERT, smooth, WIRE } from './shaders';
 import { createOverlay } from './overlay';
@@ -17,13 +18,29 @@ type Env = { rt: THREE.WebGLCubeRenderTarget; cam: THREE.CubeCamera };
 const RADIAL = 6, TUBULAR = 900;
 
 /** The room, drawn twice by one shader. Its only inputs are the mask and light uniforms, so the geometry can be swapped for a Blender model later. */
+// The corridor is the Blender-built model (baked lighting + blueprint line set). Until it has loaded, or if it
+// cannot load, the coded stand-in is drawn, so the story never waits on a download. The skyline is always coded.
 function Corridor({ uniforms }: { uniforms: Director['roomU'] }) {
-  const geometry = useMemo(buildWorld, []);
+  const gl = useThree((st) => st.gl);
+  const [assets, setAssets] = useState<RoomAssets | null>(null);
+  const geometry = useMemo(() => buildWorld(!assets), [assets]);
   useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => {
+    let cancelled = false, loaded: RoomAssets | null = null;
+    const tier = document.documentElement.dataset.tier === 'full' ? 'full' : 'light';
+    loadRoom(gl, tier, uniforms as unknown as Record<string, THREE.IUniform>)
+      .then((a) => { if (cancelled) a.dispose(); else { loaded = a; setAssets(a); } })
+      .catch((err) => console.warn('Blender room not loaded; using the stand-in', err));
+    return () => { cancelled = true; loaded?.dispose(); };
+  }, [gl, uniforms]);
   return (
-    <mesh geometry={geometry} frustumCulled={false}>
-      <shaderMaterial args={[{ vertexShader: ROOM_VERT, fragmentShader: ROOM_FRAG, uniforms }]} />
-    </mesh>
+    <>
+      <mesh geometry={geometry} frustumCulled={false}>
+        <shaderMaterial args={[{ vertexShader: ROOM_VERT, fragmentShader: ROOM_FRAG, uniforms }]} />
+      </mesh>
+      {assets ? <primitive object={assets.mesh} /> : null}
+      {assets ? <primitive object={assets.lines} /> : null}
+    </>
   );
 }
 

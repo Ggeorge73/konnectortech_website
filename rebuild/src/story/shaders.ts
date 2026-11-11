@@ -26,26 +26,32 @@ void main() {
 
 // One shader draws both worlds. A mask chooses, per pixel, the "real" look or the "blueprint" look.
 // The mask has three inputs: the scanner lens, the radar sweep and an overall blend.
+// The mask that chooses, per pixel, the "real" look (0) or the "blueprint" look (1).
+// Three inputs: the scanner lens, the radar sweep and an overall blend (used for the sphere's reflections).
+export const MASK_GLSL = /* glsl */ `
+uniform vec3 uLens; uniform vec3 uScan; uniform float uSweep; uniform float uArm0; uniform float uCube; uniform float uCubeBlend;
+float storyMask() {
+  if (uCube > 0.5) return uCubeBlend;
+  vec2 f = gl_FragCoord.xy;
+  vec2 d = f - uScan.xy;
+  float r = clamp(length(d) / uScan.z, 0.0, 0.9999);
+  float a = fract((atan(d.y, d.x) - uArm0) / 6.2831853 + 2.0);
+  float th = uSweep * 3.0; float k = floor(th); float fr = th - k;
+  float ring = floor(r * 3.0);
+  float sw = ring < k ? 1.0 : (ring == k ? 1.0 - smoothstep(fr - 0.003, fr + 0.003, a) : 0.0);
+  if (uSweep >= 0.999) sw = 1.0;
+  if (uSweep <= 0.001) sw = 0.0;
+  float lens = uLens.z > 0.5 ? 1.0 - smoothstep(uLens.z - 1.5, uLens.z + 1.5, length(f - uLens.xy)) : 0.0;
+  return max(sw, lens);
+}`;
+
 export const ROOM_FRAG = /* glsl */ `
 uniform vec3 uLights[5]; uniform float uLightI[5]; uniform float uStatus; uniform float uLit[8];
-uniform vec3 uLens; uniform vec3 uScan; uniform float uSweep; uniform float uArm0; uniform float uCube; uniform float uCubeBlend;
 uniform vec3 uCyan; uniform vec3 uWire; uniform vec3 uNight;
 varying vec2 vUv; varying vec3 vN; varying vec3 vW; varying float vShade; varying float vSys; varying float vGlow; varying float vDepth;
+${MASK_GLSL}
 void main() {
-  float mask;
-  if (uCube > 0.5) { mask = uCubeBlend; } else {
-    vec2 f = gl_FragCoord.xy;
-    vec2 d = f - uScan.xy;
-    float r = clamp(length(d) / uScan.z, 0.0, 0.9999);
-    float a = fract((atan(d.y, d.x) - uArm0) / 6.2831853 + 2.0);
-    float th = uSweep * 3.0; float k = floor(th); float fr = th - k;
-    float ring = floor(r * 3.0);
-    float sw = ring < k ? 1.0 : (ring == k ? 1.0 - smoothstep(fr - 0.003, fr + 0.003, a) : 0.0);
-    if (uSweep >= 0.999) sw = 1.0;
-    if (uSweep <= 0.001) sw = 0.0;
-    float lens = uLens.z > 0.5 ? 1.0 - smoothstep(uLens.z - 1.5, uLens.z + 1.5, length(f - uLens.xy)) : 0.0;
-    mask = max(sw, lens);
-  }
+  float mask = storyMask();
   vec3 N = normalize(vN);
   int sys = int(vSys + 0.5);
   float lit = uLit[sys];

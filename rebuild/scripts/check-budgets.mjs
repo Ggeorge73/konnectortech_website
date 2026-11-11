@@ -16,7 +16,9 @@ const lazy = walk(path.join(out, '_next/static/chunks')).filter((f) => f.endsWit
 // Each tier downloads the shared models plus the textures of its own size (*.full.ktx2 or *.light.ktx2).
 const modelFiles = fs.existsSync(path.join(out, 'models')) ? walk(path.join(out, 'models')) : [];
 const tierModels = (tier, other) => modelFiles.filter((f) => !f.includes(`.${other}.`)).reduce((n, f) => n + fs.statSync(f).size, 0);
-const code3d = lazy.reduce((n, f) => n + gz(f), 0);
+// 3D code = the lazy chunks plus the texture transcoder the KTX2 textures need
+const basis = fs.existsSync(path.join(out, 'basis')) ? walk(path.join(out, 'basis')).reduce((n, f) => n + gz(f), 0) : 0;
+const code3d = lazy.reduce((n, f) => n + gz(f), 0) + basis;
 console.log(`  3D code ${kb(code3d)} compressed; model files: Full ${kb(tierModels('full', 'light'))}, Light ${kb(tierModels('light', 'full'))}`);
 const poster = fs.statSync(path.join(out, 'stills/poster.jpg')).size + fs.statSync(path.join(out, 'stills/scene-1.jpg')).size;
 
