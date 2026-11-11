@@ -22,6 +22,7 @@ export function createDirector(tier: Tier) {
     forced: params.get('mode') === 'story' || navigator.webdriver, // testers and scripts: never step down
     simSlow: process.env.NEXT_PUBLIC_PREVIEW === '1' && params.has('simulate-slow'),
     lowRes: false,
+    pending: 0, // model and texture downloads still in flight
     forcedT: null as number | null,
     path: buildPath(),
     // Mask and light inputs for the corridor (both worlds). The corridor component only reads these.

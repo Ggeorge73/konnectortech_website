@@ -10,6 +10,9 @@ import { BLOCK_Z, buildWorld, FORK, GATE_Z, subCurve } from './world';
 import { loadRoom, type RoomAssets } from './room';
 import { loadSphereClip, type SphereClip } from './sphereClip';
 import { BLOOM_LAYER, createBloom, OVERLAY_LAYER, type Bloom } from './bloom';
+
+// Model and texture downloads still in flight. The frame loop warms up shaders once this reaches zero.
+const pending = { count: 0 };
 import { buildMechanism, buildPlates, buildSeamTriangle, MARK_RING, MARK_TUBE, NODES, R } from './sphere';
 import { AMBER, CHROME_FRAG, CHROME_VERT, clamp, CYAN, glowTexture, GRID_FRAG, GRID_VERT, LINK_FRAG, LINK_VERT, mix, NIGHT, ROOM_FRAG, ROOM_VERT, smooth, WIRE } from './shaders';
 import { createOverlay } from './overlay';
@@ -30,9 +33,11 @@ function Corridor({ uniforms }: { uniforms: Director['roomU'] }) {
   useEffect(() => {
     let cancelled = false, loaded: RoomAssets | null = null;
     const tier = document.documentElement.dataset.tier === 'full' ? 'full' : 'light';
+    pending.count++;
     loadRoom(gl, tier, uniforms as unknown as Record<string, THREE.IUniform>)
       .then((a) => { if (cancelled) a.dispose(); else { loaded = a; setAssets(a); } })
-      .catch((err) => console.warn('Blender room not loaded; using the stand-in', err));
+      .catch((err) => console.warn('Blender room not loaded; using the stand-in', err))
+      .finally(() => { pending.count--; });
     return () => { cancelled = true; loaded?.dispose(); };
   }, [gl, uniforms]);
   return (
@@ -188,9 +193,11 @@ function Sphere({ s, env }: { s: Director; env: Env }) {
   const [clip, setClip] = useState<SphereClip | null>(null);
   useEffect(() => {
     let cancelled = false, loaded: SphereClip | null = null;
+    pending.count++;
     loadSphereClip({ plate: b.chrome, mechanism: b.dark, rod: b.rod })
       .then((c) => { if (cancelled) c.dispose(); else { loaded = c; setClip(c); } })
-      .catch((err) => console.warn('Blender sphere clip not loaded; using the coded plates', err));
+      .catch((err) => console.warn('Blender sphere clip not loaded; using the coded plates', err))
+      .finally(() => { pending.count--; });
     return () => { cancelled = true; loaded?.dispose(); };
   }, [b]);
 
@@ -247,13 +254,13 @@ const C_DOORS = new THREE.Vector3(0, 2.3, -74.4), L_DOORS = new THREE.Vector3(0,
 function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director; env: Env; scroll: RefObject<ScrollTime | null>; stage: HTMLElement; hud: HTMLElement; onFail: (r: string) => void; onStepDown: () => void }) {
   const overlay = useMemo(() => createOverlay(s, stage, hud), [s, stage, hud]);
   const sound = useMemo(createSound, []);
-  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '' }), []);
+  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '', warmed: false, cubeDrawn: false, programs: 0, hist: new Uint32Array(401), statN: 0, statT: 0, statRung: '', hitch: 0, lastHitch: '', hitchBy: {} as Record<string, number> }), []);
   useEffect(() => () => { v.bloom?.dispose(); v.bloom = null; }, [v]);
   useEffect(() => {
     // Preview builds only: the readout is never part of a production build
     if (process.env.NEXT_PUBLIC_PREVIEW !== '1' || !new URLSearchParams(window.location.search).has('fps')) return;
     const el = document.createElement('div');
-    el.setAttribute('style', 'position:fixed;left:10px;bottom:10px;z-index:99;background:#0b1220;color:#7fdbff;border:1px solid #00c2ff;border-radius:6px;padding:5px 9px;font:500 12px ui-monospace,monospace;pointer-events:none');
+    el.setAttribute('style', 'position:fixed;left:10px;bottom:10px;z-index:99;background:#0b1220;color:#7fdbff;border:1px solid #00c2ff;border-radius:6px;padding:6px 10px;font:500 12px/1.5 ui-monospace,monospace;pointer-events:none;white-space:pre;max-width:calc(100vw - 20px);overflow:hidden');
     document.body.appendChild(el);
     v.fpsEl = el;
     return () => { el.remove(); v.fpsEl = null; };
@@ -368,7 +375,9 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     // advanced or the lights have changed. At most every 4th frame on Full and every 12th on Light.
     const changed = v.cubePos.distanceToSquared(ball.position) > 0.0009 || Math.abs(v.cubeSweep - s.sweep) > 0.01 || v.cubeFinale !== s.finale;
     const due = v.cubeTick++ % (s.tier === 'full' ? 4 : 12) === 0;
+    v.cubeDrawn = false;
     if (s.forcedT !== null || v.cubeTick === 1 || (changed && due) || v.cubeTick % 180 === 0) {
+      v.cubeDrawn = true;
       v.cubePos.copy(ball.position); v.cubeSweep = s.sweep; v.cubeFinale = s.finale;
       ball.visible = false;
       s.roomU.uCube.value = 1;
@@ -392,6 +401,18 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     }
     v.calls = state.gl.info.render.calls; // draw calls this frame: main view + reflections + bloom
     state.gl.info.reset();
+
+    // Warm-up: once every model has arrived, compile every shader the story will ever use, including those of
+    // objects that are hidden until a later scene (gates, block, amber links, grid, glow). Otherwise each would be
+    // compiled the first time it appears, which stalls a frame at the scene changes.
+    if (!v.warmed && pending.count === 0 && s.frames > 3 && !(window as unknown as { __ktNoWarm?: boolean }).__ktNoWarm) { // the flag is for before-and-after measurement only
+      v.warmed = true;
+      const hidden: THREE.Object3D[] = [];
+      state.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
+      const done = state.gl.compileAsync ? state.gl.compileAsync(state.scene, camera) : Promise.resolve(state.gl.compile(state.scene, camera));
+      for (const o of hidden) o.visible = false;
+      void done.catch(() => {});
+    }
     if (!s.live) { s.live = true; stage.classList.add('is-live'); document.documentElement.dataset.storyReady = '1'; }
 
     overlay.setCamera(camera);
@@ -405,12 +426,31 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
       }
       if (v.fpsT >= 0.5) {
         const fps = v.fpsN / v.fpsT;
-        // The lowest figure ignores the first 4 seconds (loading) and the 2 seconds after a tier change
-        if (s.time > 4 && s.time - v.tierAt > 2 && fps < v.fpsMin) { v.fpsMin = fps; v.fpsMinScene = s.sc + 1; v.fpsMinTier = s.tier + (s.lowRes ? ' low-res' : ''); }
-        const low = v.fpsMin < 900 ? `lowest ${Math.round(v.fpsMin)} in scene ${v.fpsMinScene} on ${v.fpsMinTier}` : 'lowest: measuring';
-        v.fpsEl.textContent = `TIER ${s.tier.toUpperCase()}${s.lowRes ? ' low-res' : ''} · ${Math.round(fps)} fps · ${low} · scene ${s.sc + 1} · ${v.calls} draws · ${state.size.width}x${state.size.height} @${s.dpr.toFixed(2)} · ${v.gpu}`;
+        let line2 = 'measuring starts 4 s after load';
+        if (v.statN > 30) {
+          // 1% low: the average rate of the slowest 1% of frames
+          let need = Math.max(1, Math.ceil(v.statN * 0.01)), n = 0, t = 0;
+          for (let ms = 400; ms >= 0 && n < need; ms--) { const c = Math.min(v.hist[ms], need - n); n += c; t += (c * Math.max(ms, 1)) / 1000; }
+          const by = Object.entries(v.hitchBy).filter(([, c]) => c > 0).map(([k, c]) => `${c} ${k}`).join(', ');
+          line2 = `average ${Math.round(v.statN / v.statT)} · 1% low ${Math.round(n / t)} · stalls over 50 ms: ${v.hitch}${by ? ` (${by})` : ''}${v.lastHitch ? ` · last: ${v.lastHitch}` : ''}`;
+        }
+        v.fpsEl.textContent = `TIER ${s.tier.toUpperCase()}${s.lowRes ? ' low-res' : ''} · scene ${s.sc + 1} · now ${Math.round(fps)} fps\n${line2}\n${v.calls} draws · ${state.size.width}x${state.size.height} @${s.dpr.toFixed(2)} · ${v.gpu}`;
         v.fpsT = 0; v.fpsN = 0;
       }
+      // Statistics leave out the first 4 seconds after load and 2 seconds after a tier change (decoding, compiling),
+      // and start afresh when the tier changes, so each tier is judged by itself.
+      const rungNow = s.tier + (s.lowRes ? '-low' : '');
+      if (rungNow !== v.statRung) { v.statRung = rungNow; v.hist.fill(0); v.statN = 0; v.statT = 0; v.hitch = 0; v.lastHitch = ''; for (const k in v.hitchBy) v.hitchBy[k] = 0; if (s.frames > 5) v.tierAt = s.time; }
+      const programs = state.gl.info.programs?.length ?? 0;
+      if (s.time > 4 && s.time - v.tierAt > 2 && !document.hidden && s.stageOpacity > 0.5 && delta < 2) {
+        v.hist[Math.min(400, Math.round(delta * 1000))]++; v.statN++; v.statT += delta;
+        if (delta > 0.05) {
+          // What was going on in a stalled frame: a new shader was compiled, a download was landing, the sphere's reflections were redrawn, or none of these
+          const cause = programs !== v.programs ? 'shader compile' : pending.count > 0 ? 'loading' : v.cubeDrawn ? 'reflections' : 'other';
+          v.hitch++; v.hitchBy[cause] = (v.hitchBy[cause] || 0) + 1; v.lastHitch = `${Math.round(delta * 1000)} ms in scene ${s.sc + 1}, ${cause}`;
+        }
+      }
+      v.programs = programs;
     }
 
     // Device tiers: step down quality before falling back. Full → Light → Light at lower resolution → brief mode.

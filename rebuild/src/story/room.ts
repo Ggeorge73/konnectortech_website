@@ -58,6 +58,9 @@ export async function loadRoom(renderer: THREE.WebGLRenderer, tier: 'full' | 'li
   try {
     const [room, lineSet, dim, lit] = await Promise.all([gltf.loadAsync('/models/room.glb'), gltf.loadAsync('/models/room_lines.glb'), bake('room_dim'), bake('room_lit')]);
     for (const t of [dim, lit]) { t.colorSpace = THREE.NoColorSpace; t.anisotropy = tier === 'full' ? 4 : 1; t.flipY = false; t.needsUpdate = true; }
+    // Send both textures to the graphics chip now. The lit one is first shown in scene 7; uploading it then would stall a frame.
+    renderer.initTexture(dim);
+    renderer.initTexture(lit);
     let mesh: THREE.Mesh | null = null, lines: THREE.LineSegments | null = null;
     room.scene.updateMatrixWorld(true);
     lineSet.scene.updateMatrixWorld(true);

@@ -71,8 +71,27 @@ All 36 browser tests and 10 form tests pass.
 
 | Device | Lowest | Gate | Result |
 | --- | --- | --- | --- |
-| Samsung Galaxy phone | 55 | never under 30 on Light | Pass |
+| Samsung Galaxy phone, first run | 55 | never under 30 on Light | Pass |
+| Samsung Galaxy phone, second run | 37 | never under 30 on Light | Pass, but 18 lower than the first run |
 | Laptop | 24 | 60 on Full, never under 30 on Light | **Fail** |
+
+The same phone gave 55 and then 37. The lowest single reading swings from run to run, so it cannot decide the gate.
+
+### How the gate is judged (agreed 11 Nov 2026)
+
+Read from the `?fps=1` readout after scrolling the whole story once at a normal pace:
+
+| Tier | Passes when |
+| --- | --- |
+| Full | the **average** is near 60, and the **1% low** is at least 50 |
+| Light | the **average** never falls under 30 |
+
+- **Average** is all frames drawn divided by the time they took. It says how the visit felt overall.
+- **1% low** is the average rate of the slowest 1% of frames. It says how bad the worst moments were, without one
+  freak frame deciding the result.
+- Both leave out the first 4 seconds after load and the 2 seconds after a tier change, when models are still being
+  decoded and shaders compiled. Both start afresh when the tier changes, so each tier is judged by itself.
+- On a screen that refreshes at 60 Hz the average cannot exceed 60, so "near 60" means 57 or more.
 
 ### What I could and could not find out
 
@@ -120,14 +139,33 @@ step down one rung: Full (target 50, aiming at 60) → Light (30) → Light at l
 single long stall (a tab switch or a download) is ignored. A screen that itself refreshes below 60 Hz is allowed for.
 When the tier changes mid-visit, the page stays at the same moment of the story. The step-down test still passes.
 
-**The readout now shows:** the tier in capitals, current frame rate, the lowest figure with the scene and tier it
-happened in, the current scene, draw calls, the resolution being drawn, and the graphics chip. Preview only.
+**The readout now shows (three lines, preview only):**
+
+1. the tier in capitals, the current scene, and the frame rate right now;
+2. the average, the 1% low, and the number of stalls (frames over 50 ms) with what was happening in each:
+   a shader being compiled, a download landing, the sphere's reflections being redrawn, or none of these ("other"),
+   plus the length, scene and cause of the latest stall;
+3. draw calls, the resolution being drawn, and the graphics chip.
+
+### What makes the dips
+
+Checked here by scrolling the whole story on a software renderer. It is far too slow to give real frame rates, but
+it does show honestly *which* frames compile a shader or wait on a download.
+
+| Suspect | Finding | Fix |
+| --- | --- | --- |
+| Shaders compiled at scene changes | **Confirmed.** Objects hidden until a later scene (gates, the block, amber links, glow) had their shaders compiled the first time they appeared: 3 mid-story compiles on Full, 4 on Light. | All shaders are compiled once, right after the models arrive, off the main thread where the browser allows. Re-measured: 0 mid-story compiles on both tiers. |
+| Textures sent to the graphics chip late | **Confirmed in code.** The "lit" room texture is first shown in scene 7 and was uploaded then. | Both room textures are uploaded as soon as they are decoded. |
+| Loading (Blender clip, room, textures) | Loading starts with the story and finished inside the first 4 seconds here. On a slow connection it can run longer; the readout now marks any stall that happens while a download is still landing as "loading". All 3D files are requested at the start, so no scene waits for its own assets. | No change needed beyond the warm-up above. |
+| Logo video | **Ruled out.** The page does not load the video; it is a separate file for other uses. | None. |
+| Sphere reflections | Possible. Each refresh draws the room six more times; the readout counts stalls that fall on a refresh frame. | Already throttled in the previous round. The count will show whether more is needed. |
+| Garbage collection | **Not measured.** It cannot be seen from inside the page; it would show up as "other" stalls with no pattern by scene. | None yet. If the re-test shows scattered "other" stalls, the next step is a memory profile on that device. |
 
 ### Why the gate is still not signed off
 
-The fixes are untested on the laptop that failed. The owner will measure again on the same laptop and phone.
-If the laptop is still under target, the readout line will say which tier, which scene and which graphics chip,
-and the next cut can be aimed at that scene.
+The fixes are untested on the devices that were measured. The owner will measure again on the same laptop and
+phone and send the three readout lines. The gate is then judged by the table above. If a device is still under
+target, the stall causes and the scene of the latest stall say where to aim the next cut.
 
 ## Also open
 
