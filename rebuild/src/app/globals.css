@@ -411,3 +411,14 @@ html[data-mode='story'] .rail a.is-current + .rail-gates ~ *, html[data-mode='st
     @keyframes record-in { from { opacity: 0; transform: translateY(36px); } to { opacity: 1; transform: none; } }
   }
 }
+
+/* Scene 3, desktop story: the four service panels leave the side card and dock onto the line itself.
+   The story engine places each one; they stay real links in the page. */
+@media (min-width: 861px) {
+  html[data-story-ready] [data-scene='3'] .service-list { margin: 0; height: 0; }
+  html[data-story-ready] [data-scene='3'] .service-list li { position: fixed; left: 0; top: 0; width: 280px; z-index: 4; opacity: 0; pointer-events: none; transition: opacity 0.3s ease-out; }
+  html[data-story-ready] [data-scene='3'] .service-list li.is-docked { opacity: 1; pointer-events: auto; }
+  html[data-story-ready] [data-scene='3'] .service-list a { padding: 9px 12px; border-left-width: 1px; border-color: var(--cyan); background: rgba(11, 18, 32, 0.94); }
+  html[data-story-ready] [data-scene='3'] .service-list b { font-size: 0.86rem; }
+  html[data-story-ready] [data-scene='3'] .service-list span { font-size: 0.76rem; line-height: 1.35; }
+}

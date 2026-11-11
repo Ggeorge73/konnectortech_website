@@ -293,7 +293,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     const { T, q, finale, spherePos: sp } = s;
     s.pointerEase.lerp(s.pointer, 1 - Math.exp(-dt * 3));
     if (finale) { v.pos.copy(C_REST); v.look.copy(CENTRE); }
-    else if (T < 2) { const k = smooth((s.p2 - 0.05) / 0.6); v.pos.copy(C_REST).lerp(C_SCAN, k); v.look.copy(L_REST).lerp(L_SCAN, k); }
+    else if (T < 2) { const k = smooth((s.p2 - 0.28) / 0.34); v.pos.copy(C_REST).lerp(C_SCAN, k); v.look.copy(L_REST).lerp(L_SCAN, k); }
     else {
       // Scene 3: follow the sphere from inside the room, behind and slightly above.
       // Scene 4: move to one side and look along the line like a track.
@@ -311,7 +311,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     // Keep the subject clear of the text panel: right of centre on desktop, upper part of the screen on phones
     const centred = finale ? smooth(q / 0.18) : 0;
     const shiftX = s.capture || s.mobile ? 0 : mix(0.15, 0, centred);
-    const shiftY = s.capture ? 0 : s.mobile ? -0.2 : mix(0, 0.1, centred) - 0.2 * (finale ? smooth((q - 0.72) / 0.25) : 0);
+    const shiftY = s.capture ? 0 : s.mobile ? -0.2 - 0.1 * smooth((T - 2.9) / 0.2) * (1 - smooth((T - 5) / 0.3)) : mix(0, 0.1, centred) - 0.2 * (finale ? smooth((q - 0.72) / 0.25) : 0);
     camera.setViewOffset(W, H, -shiftX * W, -shiftY * H, W, H);
     camera.updateMatrixWorld();
 

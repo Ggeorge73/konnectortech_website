@@ -69,7 +69,7 @@ export function createDirector(tier: Tier) {
       const finale = (s.finale = T >= 5.55); // back in the corridor for scene 7
 
       // Worlds: the sweep converts the room to blueprint in scene 2 and restores it, now lit, in scene 7
-      const sweep = (s.sweep = T < 1 ? 0 : T < 2 ? smooth((p2 - 0.02) / 0.32) : !finale ? 1 : 1 - smooth(q / 0.16));
+      const sweep = (s.sweep = T < 1 ? 0 : T < 2 ? smooth((p2 - 0.3) / 0.24) : !finale ? 1 : 1 - smooth(q / 0.16));
       s.roomU.uSweep.value = sweep;
       s.roomU.uSky.value = finale ? 0 : smooth((T - 3.9) / 0.2);
       const x = s.time * 2.3, i0 = Math.floor(x);
@@ -112,7 +112,7 @@ export function createDirector(tier: Tier) {
       s.arriveP = finale ? Math.min(smooth((q - 0.58) / 0.12), smooth((tau - 0.9) / 0.1)) : 0;
 
       // The line, links, systems, gates, block, branches
-      s.linkOpacity = finale ? 0 : T < 2 ? smooth((p2 - 0.26) / 0.1) : 1;
+      s.linkOpacity = finale ? 0 : T < 2 ? smooth((p2 - 0.5) / 0.06) : 1;
       for (let i = 0; i < 5; i++) lit[i + 1] = finale ? 0 : T >= 3 ? 1 : T < 2 ? 0 : smooth((u - s.path.uAnchors[i] + 0.004) / 0.008);
       const pub = s.sector === 'public' ? 1 : s.sector === 'private' ? 0.12 : 0.45, prv = s.sector === 'private' ? 1 : s.sector === 'public' ? 0.12 : 0.45;
       const k = 1 - Math.exp(-dt * 5);

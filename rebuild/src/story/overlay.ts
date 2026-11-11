@@ -20,7 +20,9 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
   // Scene 3: each service panel docks onto the line. A leader runs from the panel to the point on the line it joined.
   const dockEls = [0, 1, 2, 3].map((i) => el(`dock-${i}`));
   const serviceLis = Array.from(document.querySelectorAll<HTMLElement>('[data-scene="3"] [data-at]'));
-  const dockPoints = serviceLis.map((li) => s.path.curve.getPointAt(clamp(s.path.uTrack * inOut((parseFloat(li.dataset.at || '0') - 0.1) / 0.8))));
+  const dockU = serviceLis.map((li) => clamp(s.path.uTrack * inOut((parseFloat(li.dataset.at || '0') - 0.1) / 0.8)));
+  const sidePanel = document.querySelector<HTMLElement>('[data-scene="3"] .panel');
+  const panelRight = () => (sidePanel ? sidePanel.getBoundingClientRect().right : 0);
   const place = (e: HTMLElement, x: number, y: number, opacity: number, extra = '') => {
     e.style.opacity = opacity.toFixed(3);
     if (opacity > 0.001) e.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)${extra}`;
@@ -71,7 +73,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
         const armA = -(s.roomU.uArm0.value + ((sweep * 3) % 1) * Math.PI * 2);
         place(armEl, s.sphereScreen.x, s.sphereScreen.y, sweep > 0.002 && sweep < 0.998 ? 0.9 : 0, ` rotate(${armA.toFixed(4)}rad) scaleX(${(Math.hypot(s.W, s.H) * 0.46).toFixed(1)})`);
 
-        const tagsOn = finale ? 0 : smooth((p2 - 0.3) / 0.1) * (1 - smooth((T - 3.02) / 0.15));
+        const tagsOn = finale ? 0 : smooth((p2 - 0.5) / 0.06) * (1 - smooth((T - 3.02) / 0.15));
         SYSTEM_ANCHORS.forEach((a, i) => {
           tmp.set(a.x < 0 ? a.x * 0.8 : a.x * 1.6, TAG_Y[i], a.z); // left-side labels sit nearer the aisle, clear of the text panel
           const ok = project(tmp);
@@ -81,18 +83,42 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
         gapPoints.forEach((g, i) => {
           const ok = project(g);
           const open = s.u < gapU[i] && T < 3 && !finale ? 1 : 0;
-          place(gapEls[i], scr.x, scr.y, ok ? smooth((p2 - 0.34) / 0.08) * open : 0);
+          place(gapEls[i], scr.x, scr.y, ok ? smooth((p2 - 0.52) / 0.06) * open : 0);
           gapEls[i].classList.toggle('is-hot', s.hotGap === i);
         });
-        dockEls.forEach((d, i) => {
-          const li = serviceLis[i];
-          // Dock where the panel joined the line; once that point has left the view, hold on the line just behind the sphere
-          let on = li && li.classList.contains('is-on') && T >= 2 && T < 3.02 && !s.mobile && project(dockPoints[i]);
-          if (li && li.classList.contains('is-on') && T >= 2 && T < 3.02 && !s.mobile && (!on || scr.y > s.H - 40 || scr.x > s.W - 40)) on = project(s.path.curve.getPointAt(clamp(s.u - 0.005 * (i + 1))));
-          if (!on) { d.style.opacity = '0'; return; }
-          const r = li.getBoundingClientRect();
-          const x0 = r.right, y0 = r.top + r.height / 2, dx = scr.x - x0, dy = scr.y - y0;
-          place(d, x0, y0, dx > 8 ? 0.85 : 0, ` rotate(${Math.atan2(dy, dx).toFixed(4)}rad) scaleX(${Math.hypot(dx, dy).toFixed(1)})`);
+        // Scene 3 (desktop): each service panel docks onto the line itself and rides it behind the sphere.
+        // A panel joins at the point the sphere had reached, then keeps its place in the queue as the sphere moves on.
+        const live = T >= 2 && T < 3.03 && !finale && !s.mobile;
+        const onCount = live ? serviceLis.filter((li) => li.classList.contains('is-on')).length : 0;
+        // Boxes already taken on screen: the sphere first, then each placed panel. A panel moves away from the line until it is clear.
+        const taken: [number, number, number, number][] = [];
+        const sr = s.lens.r / 2.25 + 10;
+        if (live) taken.push([s.sphereScreen.x - sr, s.sphereScreen.y - sr, s.sphereScreen.x + sr, s.sphereScreen.y + sr]);
+        serviceLis.forEach((li, i) => {
+          const d = dockEls[i];
+          const on = live && li.classList.contains('is-on');
+          li.classList.toggle('is-docked', !!on);
+          if (!on || !d) { if (d) d.style.opacity = '0'; return; }
+          const slot = onCount - 1 - i; // newest panel rides closest to the sphere
+          const u = Math.min(s.u - 0.007, Math.max(dockU[i], s.u - (0.009 + 0.0095 * slot)));
+          project(s.path.curve.getPointAt(clamp(u)));
+          const px = scr.x, py = scr.y, above = i % 2 === 0, w = 280, h = li.offsetHeight || 80;
+          // Find the nearest free place: first on the panel's own side of the line, then the other side, then further along.
+          const minX = panelRight() + 14, maxX = s.W - w - 14, minY = 78, maxY = s.H - h - 12;
+          const free = (xx: number, yy: number) => yy >= minY && yy <= maxY && !taken.some(([x0, y0, x1, y1]) => xx < x1 + 10 && xx + w > x0 - 10 && yy < y1 + 10 && yy + h > y0 - 10);
+          let x = clamp(px - w / 2 + (above ? -30 : 30), minX, maxX), y = clamp(above ? py - 40 - h : py + 40, minY, maxY), found = false;
+          search: for (const shift of [0, -(w + 20), w + 20, -2 * (w + 20), 2 * (w + 20)]) {
+            const xx = clamp(px - w / 2 + shift, minX, maxX);
+            for (const dir of above ? [-1, 1] : [1, -1]) for (let n = 0; n < 50; n++) {
+              const yy = (dir < 0 ? py - 40 - h : py + 40) + dir * n * 12;
+              if (free(xx, yy)) { x = xx; y = yy; found = true; break search; }
+            }
+          }
+          void found;
+          taken.push([x, y, x + w, y + h]);
+          li.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)`;
+          const ex = clamp(px, x + 16, x + w - 16), ey = y + h < py ? y + h : y > py ? y : clamp(py, y, y + h), dx = ex - px, dy = ey - py;
+          place(d, px, py, 0.9, ` rotate(${Math.atan2(dy, dx).toFixed(4)}rad) scaleX(${Math.hypot(dx, dy).toFixed(1)})`);
         });
         GATE_Z.forEach((z, i) => {
           tmp.set(0, 2.3, z);
@@ -114,6 +140,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
     dispose() {
       gapLis.forEach((li) => gapEvents.forEach(([name, fn]) => li.removeEventListener(name, fn)));
       Array.from(hud.children).forEach((c) => ((c as HTMLElement).style.opacity = '0'));
+      serviceLis.forEach((li) => { li.classList.remove('is-docked'); li.style.transform = ''; });
     },
   };
 }
