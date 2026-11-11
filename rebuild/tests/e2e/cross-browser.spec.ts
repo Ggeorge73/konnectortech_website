@@ -29,6 +29,7 @@ test('a failed send keeps what the visitor typed', async ({ page }) => {
   await page.getByLabel('Work email').fill('ada@example.org');
   await page.getByLabel('Organization').fill('Example County');
   await page.getByLabel('What do you need delivered?').fill('A records system that has to go live in June.');
+  await expect(page.getByTestId('enquiry-form')).toHaveAttribute('data-ready', ''); // the form's script has loaded
   await page.getByRole('button', { name: 'Send and get my plan' }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'Nothing you typed has been lost' })).toBeVisible();
   await expect(page.getByLabel('What do you need delivered?')).toHaveValue('A records system that has to go live in June.');

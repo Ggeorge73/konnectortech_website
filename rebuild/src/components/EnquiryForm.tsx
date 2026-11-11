@@ -34,6 +34,19 @@ export function EnquiryForm({ pos }: { pos: string }) {
   const token = useRef('');
   const widget = useRef<HTMLDivElement>(null);
   const sentHeading = useRef<HTMLHeadingElement>(null);
+  const form = useRef<HTMLFormElement>(null);
+  const [ready, setReady] = useState(false);
+  // On a slow connection a visitor can type before this script has loaded. Take what is already in the boxes,
+  // so it is neither wiped nor reported as missing.
+  useEffect(() => {
+    const typed: Partial<Values> = {};
+    for (const k of ['name', 'email', 'organization', 'message', 'deadline'] as const) {
+      const el = form.current?.elements.namedItem(k);
+      if ((el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) && el.value) typed[k] = el.value;
+    }
+    if (Object.keys(typed).length) setV((cur) => ({ ...cur, ...typed }));
+    setReady(true);
+  }, []);
   const id = (k: string) => `${pos}-${k}`;
 
   // The sector field follows the scene 5 choice until the visitor changes it here.
@@ -146,7 +159,7 @@ export function EnquiryForm({ pos }: { pos: string }) {
   );
 
   return (
-    <form className="form" onSubmit={submit} onFocus={onStart} noValidate data-testid="enquiry-form">
+    <form ref={form} data-ready={ready ? '' : undefined} className="form" onSubmit={submit} onFocus={onStart} noValidate data-testid="enquiry-form">
       {ask ? (
         <p className="field full muted" style={{ margin: 0 }}>
           {ask === 'call' ? 'Tell us a few times that suit you and we will confirm a 30-minute call.' : 'Tell us where to send the capability statement.'}

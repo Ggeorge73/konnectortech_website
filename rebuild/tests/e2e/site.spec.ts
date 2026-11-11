@@ -37,6 +37,18 @@ test.describe('enquiry form', () => {
     expect(await events(page)).toEqual(expect.arrayContaining(['form_started', 'form_sent']));
   });
 
+  test('text typed before the page script has loaded is kept and sent', async ({ page }) => {
+    // A slow connection: the form is on screen and usable before its script arrives.
+    await page.route('**/_next/static/**/*.js', async (r) => { await new Promise((ok) => setTimeout(ok, 1500)); await r.continue(); });
+    await page.route('**/api/contact', (r) => r.fulfill({ status: 502, body: '{}' }));
+    await page.goto('/contact/', { waitUntil: 'commit' });
+    await fill(page);
+    await expect(page.getByTestId('enquiry-form')).toHaveAttribute('data-ready', '');
+    await page.getByRole('button', { name: 'Send and get my plan' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'Nothing you typed has been lost' })).toBeVisible();
+    await expect(page.getByLabel('Your name')).toHaveValue('Ada Example');
+  });
+
   test('a failed send keeps what the visitor typed', async ({ page }) => {
     await page.route('**/api/contact', (r) => r.fulfill({ status: 502, body: '{}' }));
     await page.goto('/contact/');
