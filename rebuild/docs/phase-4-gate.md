@@ -219,11 +219,17 @@ Not proven: that these were the stalls on the two devices. This environment has 
 which frames do one-off work, not how long that work takes on Intel or Adreno. If stalls remain after this, the
 new labels and the per-scene counts will say where.
 
-### Why the gate is still not signed off
+### Third measurement and sign-off (owner, 11 Nov 2026)
 
-The fixes are untested on the devices that were measured. The owner will measure again on the same laptop and
-phone and send the three readout lines. The gate is then judged by the table above. If a device is still under
-target, the stall causes and the scene of the latest stall say where to aim the next cut.
+After the warm-up fix, both devices on the Light tier:
+
+| Device | Average | 1% low | Frames | Stalls over 50 ms |
+| --- | --- | --- | --- | --- |
+| Laptop (Intel Iris Plus, 1897x948 @0.85) | 60 | 42 | 1832 | 0 |
+| Phone (Samsung, Adreno 740, @1.00) | 58 | 29 | 990 | 0 |
+
+The freezes are gone on both. **Phase 4 was signed off on this result**, with one item carried into Phase 5: the
+phone's 1% low is 29, one under the floor of 30. That work is recorded in `phase-5-gate.md`.
 
 ## Also open
 
