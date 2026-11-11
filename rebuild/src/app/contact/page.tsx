@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { callHref, site, statementHref, statementLabel } from '@/lib/site';
+import { callHref, site, statementHref, statementLabel, callLabel } from '@/lib/site';
 import { PageHead } from '@/components/Page';
 import { EnquiryForm } from '@/components/EnquiryForm';
 
@@ -20,7 +20,7 @@ export default function Contact() {
             <EnquiryForm pos="contact" />
           </div>
           <aside className="aside" aria-label="Other ways to reach us">
-            <div className="card"><h3>Prefer to talk first?</h3><p className="muted">Thirty minutes, no preparation needed.</p><a className="btn btn-ghost" href={callHref} data-cta="call" data-pos="contact">{site.cta.call}</a></div>
+            <div className="card"><h3>Prefer to talk first?</h3><p className="muted">Thirty minutes, no preparation needed.</p><a className="btn btn-ghost" href={callHref} data-cta="call" data-pos="contact">{callLabel}</a></div>
             <div className="card"><h3>Shortlisting suppliers?</h3><p className="muted">Our capability statement covers core competencies and company data.</p><a className="btn btn-ghost" href={statementHref} data-cta="statement" data-pos="contact">{statementLabel}</a></div>
             <div className="card"><h3>Email</h3><p style={{ margin: 0 }}><a href={`mailto:${site.email}`}>{site.email}</a></p><p className="muted" style={{ margin: '8px 0 0' }}>{site.legalName} · {site.location}</p></div>
           </aside>

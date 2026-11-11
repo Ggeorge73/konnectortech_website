@@ -40,6 +40,8 @@ export const site = {
 export const heroHeadline = process.env.NEXT_PUBLIC_HERO === 'B' ? site.hero.B : site.hero.A;
 
 export const callHref = site.bookingUrl ?? '/contact/?ask=call';
+// No button pretends to be something it is not: without a booking link the ask is "Request a call" and opens the form.
+export const callLabel = site.bookingUrl ? site.cta.call : 'Request a call';
 export const statementHref = site.capabilityStatementUrl ?? '/contact/?ask=statement';
 export const statementLabel = site.capabilityStatementUrl ? site.cta.statement : 'Request capability statement';
 

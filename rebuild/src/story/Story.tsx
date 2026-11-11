@@ -78,7 +78,7 @@ function Lines({ s }: { s: Director }) {
         });
       }
     }
-    const main = new THREE.TubeGeometry(curve, TUBULAR, 0.022, RADIAL);
+    const main = new THREE.TubeGeometry(curve, TUBULAR, 0.016, RADIAL);
     const branches = [-1, 1].map((side) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([FORK.clone(), new THREE.Vector3(side * 1.2, 1.5, -84), new THREE.Vector3(side * 4.2, 1.2, -92), new THREE.Vector3(side * 5.4, 0.6, -104)]), 120, 0.03, RADIAL));
     return { links, main, branches };
   }, [s]);
@@ -187,7 +187,7 @@ function Sphere({ s, env }: { s: Director; env: Env }) {
     b.chromeU.uRough.value = mix(0.02, 0.3, smooth((tau - 0.75) / 0.25)); // mirror chrome becomes brushed chrome
     b.chromeU.uEdge.value = done * 0.55;
     // Triangle seams: pulse once on arrival, rest faint, open again before the transformation
-    b.seamMat.opacity = tau > 0.25 ? 0 : Math.max(0.16, s.pulse, finale ? smooth((q - 0.1) / 0.1) : 0) * (1 - smooth((tau - 0.1) / 0.15));
+    b.seamMat.opacity = tau > 0.25 ? 0 : Math.max(0.5, s.pulse, finale ? smooth((q - 0.1) / 0.1) : 0) * (1 - smooth((tau - 0.1) / 0.15));
     b.nodes.forEach((n, i) => {
       const on = smooth((done - i * 0.2) / 0.5);
       n.sprite.opacity = on * 0.85;
@@ -218,7 +218,7 @@ function Sphere({ s, env }: { s: Director; env: Env }) {
 }
 
 const C_REST = new THREE.Vector3(0, 1.55, 2.2), L_REST = new THREE.Vector3(0.35, 1.4, -6);
-const C_SCAN = new THREE.Vector3(-0.25, 1.9, 1.5), L_SCAN = new THREE.Vector3(0.1, 1.35, -9); // still inside the room, a little higher and closer
+const C_SCAN = new THREE.Vector3(1.25, 2.25, 1.9), L_SCAN = new THREE.Vector3(-0.9, 1.25, -9.5); // still inside the room, a little higher and closer
 const C_DOORS = new THREE.Vector3(0, 2.3, -74.4), L_DOORS = new THREE.Vector3(0, 3.6, -112);
 
 /** Runs the frame: director, camera, mask inputs, reflections, the draw itself, then the HUD and content layer. */
@@ -298,7 +298,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
       // Scene 3: follow the sphere from inside the room, behind and slightly above.
       // Scene 4: move to one side and look along the line like a track.
       const k4 = smooth((T - 2.9) / 0.3), side = k4 * smooth((-20 - sp.z) / 8);
-      v.pos.set(sp.x * mix(0.25, 0.6, k4) + 1.5 * side, Math.min(2.45, sp.y + mix(0.9, 1.0, k4)) + 0.6 * side, sp.z + mix(4.3, 5.4, k4));
+      v.pos.set(sp.x * mix(-0.35, 0.6, k4) + 1.5 * side, Math.min(2.6, sp.y + mix(1.05, 1.0, k4)) + 0.6 * side, sp.z + mix(4.6, 5.4, k4));
       v.look.set(sp.x * 0.5, sp.y - mix(0.2, 0.1, k4), sp.z - mix(3.5, 8, k4));
       const kIn = smooth((T - 2) / 0.2);
       if (kIn < 1) { v.pos.lerpVectors(C_SCAN, v.pos, kIn); v.look.lerpVectors(L_SCAN, v.look, kIn); }
@@ -311,7 +311,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     // Keep the subject clear of the text panel: right of centre on desktop, upper part of the screen on phones
     const centred = finale ? smooth(q / 0.18) : 0;
     const shiftX = s.capture || s.mobile ? 0 : mix(0.15, 0, centred);
-    const shiftY = s.capture ? 0 : s.mobile ? -0.2 : mix(0, 0.1, centred);
+    const shiftY = s.capture ? 0 : s.mobile ? -0.2 : mix(0, 0.1, centred) - 0.2 * (finale ? smooth((q - 0.72) / 0.25) : 0);
     camera.setViewOffset(W, H, -shiftX * W, -shiftY * H, W, H);
     camera.updateMatrixWorld();
 

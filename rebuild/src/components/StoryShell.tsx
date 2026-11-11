@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { scenes, site, systems } from '@/lib/site';
+import { scenes, site, stages, systems } from '@/lib/site';
+import { GATE_AT } from '@/story/timeline';
 import { createScrollTimeline, SCENE_COUNT } from '@/story/scroll';
 import { getMode, setMode, track } from '@/lib/track';
 import { ScannerRing } from './Mark';
@@ -86,6 +87,15 @@ export function StoryShell() {
     };
   }, []);
 
+  // In story mode a gate tick scrolls to the moment that gate locks; in brief mode it goes to the stage list.
+  const jumpToGate = (i: number) => {
+    const el = document.querySelector<HTMLElement>('[data-scene="4"]');
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    const story = document.documentElement.dataset.mode === 'story';
+    window.scrollTo({ top: story ? top + el.offsetHeight * (GATE_AT[i] + 0.02) - window.innerHeight / 2 : top, behavior: 'smooth' });
+  };
+
   return (
     <>
       <div className="stage" ref={stage} aria-hidden="true">
@@ -105,7 +115,8 @@ export function StoryShell() {
         </div>
         {systems.map((s, i) => <span key={s} className="hud-tag" data-hud={`sys-${i}`}>{s}</span>)}
         {[1, 2, 3].map((n) => <span key={n} className="hud-tag is-gap" data-hud={`gap-${n - 1}`}>Gap 0{n}</span>)}
-        {[1, 2, 3, 4, 5].map((n) => <span key={n} className="hud-tag" data-hud={`gate-${n - 1}`}>Stage 0{n}</span>)}
+        {stages.map((st) => <span key={st.n} className="hud-tag" data-hud={`gate-${st.n - 1}`}>{`0${st.n} · ${st.name}`}</span>)}
+        {[0, 1, 2, 3].map((i) => <div key={i} className="hud-dock" data-hud={`dock-${i}`} />)}
       </div>
       <nav className="rail" aria-label="Story progress" ref={rail}>
         <div className="rail-track" />
@@ -114,6 +125,14 @@ export function StoryShell() {
           {scenes.map((s) => (
             <li key={s.id}>
               <a href={`#${s.id}`} aria-label={`Scene ${s.n}: ${s.name}`}><span>{`0${s.n} · ${s.name}`}</span></a>
+              {s.n === 4 ? (
+                // Jump between the five gates of scene 4
+                <span className="rail-gates">
+                  {stages.map((st, i) => (
+                    <button key={st.n} type="button" aria-label={`Stage ${st.n}: ${st.name}`} onClick={() => jumpToGate(i)}><span>{`Stage 0${st.n} · ${st.name}`}</span></button>
+                  ))}
+                </span>
+              ) : null}
             </li>
           ))}
         </ol>

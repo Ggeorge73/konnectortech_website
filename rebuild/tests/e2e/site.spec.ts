@@ -31,7 +31,7 @@ test.describe('enquiry form', () => {
     await expect(sent).toContainText('ada@example.org');
     await expect(sent).toContainText('one business day');
     await expect(sent.getByRole('link', { name: /capability statement/ })).toBeVisible();
-    await expect(sent.getByRole('link', { name: 'Book a 30-minute call' })).toBeVisible();
+    await expect(sent.getByRole('link', { name: 'Request a call' })).toBeVisible();
     const stored = await (await request.get('/__enquiries')).json();
     expect(stored.some(([k, v]: [string, string]) => k.startsWith('enquiry:') && v.includes('Example County') && v.includes('Public sector'))).toBe(true);
     expect(await events(page)).toEqual(expect.arrayContaining(['form_started', 'form_sent']));
@@ -74,10 +74,10 @@ test.describe('home page', () => {
     await page.goto('/?mode=brief');
     const scene5 = page.locator('[data-scene="5"]');
     await expect(scene5.getByRole('link', { name: /capability statement/ })).toBeVisible();
-    await expect(scene5.getByRole('link', { name: 'Book a 30-minute call' })).toBeVisible(); // no choice: both
+    await expect(scene5.getByRole('link', { name: 'Request a call' })).toBeVisible(); // no choice: both
     await page.getByRole('button', { name: /^Private sector/ }).click();
     await expect(scene5.getByRole('link', { name: /capability statement/ })).toBeHidden();
-    await expect(scene5.getByRole('link', { name: 'Book a 30-minute call' })).toBeVisible();
+    await expect(scene5.getByRole('link', { name: 'Request a call' })).toBeVisible();
     await expect(page.getByRole('radio', { name: 'Private sector' })).toBeChecked();
     await page.getByRole('link', { name: 'Get a delivery plan' }).first().click();
     expect(await events(page)).toEqual(expect.arrayContaining(['brief_mode_opened', 'scene_reached', 'sector_chosen', 'cta_click']));

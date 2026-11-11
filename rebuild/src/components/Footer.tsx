@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { callHref, site, statementHref, statementLabel } from '@/lib/site';
+import { callHref, site, statementHref, statementLabel, callLabel } from '@/lib/site';
 import { getServices } from '@/lib/content';
 import { ModeSwitch } from './ModeSwitch';
 
@@ -34,7 +34,7 @@ export function Footer() {
             <h2>Get in touch</h2>
             <ul>
               <li><Link href="/contact/">Contact</Link></li>
-              <li><a href={callHref} data-cta="call" data-pos="footer">{site.cta.call}</a></li>
+              <li><a href={callHref} data-cta="call" data-pos="footer">{callLabel}</a></li>
               <li><a href={statementHref} data-cta="statement" data-pos="footer">{statementLabel}</a></li>
               <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
               <li><ModeSwitch pos="footer" /></li>

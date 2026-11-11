@@ -389,3 +389,25 @@ a.card:hover { border-color: var(--cyan-soft); }
   html[data-mode='story'] [data-scene='5'] .ctas { margin-top: 12px; gap: 8px; }
   html[data-mode='story'] [data-scene='5'] .ctas .btn-primary { display: none; } /* the action bar already carries it */
 }
+
+/* Scene 3: leaders from each docked service panel to its point on the line */
+.hud-dock { width: 1px; height: 2px; margin-top: -1px; transform-origin: 0 50%; background: var(--cyan); box-shadow: 0 0 6px rgba(0, 194, 255, 0.8); opacity: 0; }
+/* Scene 4: five gate ticks, in a row beside the rail's fourth tick. Shown while scene 4 is current, or on hover or focus.
+   Each target is 24 px square. Story mode only: in brief mode the five stages are a plain list. */
+.rail li { position: relative; }
+.rail-gates { display: none; }
+html[data-mode='story'] .rail-gates { display: flex; position: absolute; left: 26px; top: -12px; gap: 2px; padding: 0 4px; background: var(--navy); border: 1px solid var(--wire-line); border-radius: 12px; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+html[data-mode='story'] .rail li:hover .rail-gates, html[data-mode='story'] .rail li:focus-within .rail-gates, html[data-mode='story'] .rail a.is-current + .rail-gates { opacity: 1; pointer-events: auto; }
+html[data-mode='story'] .rail a.is-current + .rail-gates ~ *, html[data-mode='story'] .rail li:has(.rail-gates):hover a span { opacity: 0; }
+.rail-gates button { position: relative; width: 24px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer; }
+.rail-gates button::before { content: ''; position: absolute; left: 8px; top: 8px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--wire-strong); }
+.rail-gates button:hover::before, .rail-gates button:focus-visible::before { border-color: var(--cyan); background: var(--cyan); }
+.rail-gates button span { position: absolute; left: 0; top: 30px; white-space: nowrap; font: 500 0.64rem var(--font-mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); background: var(--navy); border: 1px solid var(--wire-line); padding: 4px 8px; border-radius: 6px; opacity: 0; pointer-events: none; }
+.rail-gates button:hover span, .rail-gates button:focus-visible span { opacity: 1; }
+/* Scene 6: delivery records slide in as they enter view */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .scene--proof .record { animation: record-in linear both; animation-timeline: view(); animation-range: entry 0% entry 70%; }
+    @keyframes record-in { from { opacity: 0; transform: translateY(36px); } to { opacity: 1; transform: none; } }
+  }
+}

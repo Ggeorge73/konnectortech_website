@@ -4,10 +4,10 @@ import * as THREE from 'three';
 import type { Director } from './director';
 import { ACCEPTED_AT } from './timeline';
 import { GATE_Z, SYSTEM_ANCHORS } from './world';
-import { clamp, mix, smooth } from './shaders';
+import { clamp, inOut, mix, smooth } from './shaders';
 
 // Label heights are staggered so the five system labels stay apart when seen down the length of the room.
-const TAG_Y = [2.25, 2.05, 2.55, 1.85, 2.85];
+const TAG_Y = [2.3, 2.0, 2.55, 1.75, 2.8];
 
 export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement) {
   const el = (name: string) => hud.querySelector<HTMLElement>(`[data-hud="${name}"]`)!;
@@ -17,6 +17,10 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
   const gapPoints = gapU.map((u) => s.path.curve.getPointAt(u));
   const gapEls = gapPoints.map((_, i) => el(`gap-${i}`));
   const gateEls = GATE_Z.map((_, i) => el(`gate-${i}`));
+  // Scene 3: each service panel docks onto the line. A leader runs from the panel to the point on the line it joined.
+  const dockEls = [0, 1, 2, 3].map((i) => el(`dock-${i}`));
+  const serviceLis = Array.from(document.querySelectorAll<HTMLElement>('[data-scene="3"] [data-at]'));
+  const dockPoints = serviceLis.map((li) => s.path.curve.getPointAt(clamp(s.path.uTrack * inOut((parseFloat(li.dataset.at || '0') - 0.1) / 0.8))));
   const place = (e: HTMLElement, x: number, y: number, opacity: number, extra = '') => {
     e.style.opacity = opacity.toFixed(3);
     if (opacity > 0.001) e.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)${extra}`;
@@ -79,6 +83,16 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
           const open = s.u < gapU[i] && T < 3 && !finale ? 1 : 0;
           place(gapEls[i], scr.x, scr.y, ok ? smooth((p2 - 0.34) / 0.08) * open : 0);
           gapEls[i].classList.toggle('is-hot', s.hotGap === i);
+        });
+        dockEls.forEach((d, i) => {
+          const li = serviceLis[i];
+          // Dock where the panel joined the line; once that point has left the view, hold on the line just behind the sphere
+          let on = li && li.classList.contains('is-on') && T >= 2 && T < 3.02 && !s.mobile && project(dockPoints[i]);
+          if (li && li.classList.contains('is-on') && T >= 2 && T < 3.02 && !s.mobile && (!on || scr.y > s.H - 40 || scr.x > s.W - 40)) on = project(s.path.curve.getPointAt(clamp(s.u - 0.005 * (i + 1))));
+          if (!on) { d.style.opacity = '0'; return; }
+          const r = li.getBoundingClientRect();
+          const x0 = r.right, y0 = r.top + r.height / 2, dx = scr.x - x0, dy = scr.y - y0;
+          place(d, x0, y0, dx > 8 ? 0.85 : 0, ` rotate(${Math.atan2(dy, dx).toFixed(4)}rad) scaleX(${Math.hypot(dx, dy).toFixed(1)})`);
         });
         GATE_Z.forEach((z, i) => {
           tmp.set(0, 2.3, z);

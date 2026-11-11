@@ -121,7 +121,7 @@ export function createDirector(tier: Tier) {
         const on = (s.gateOn[i] = !finale && (T >= 4 || (T >= 3 && p4 >= GATE_AT[i])));
         s.gateLock[i] += ((on ? 1 : 0) - s.gateLock[i]) * (1 - Math.exp(-dt * 6));
       }
-      s.rise = finale || T < 3 ? 0 : T >= 4 ? 1 : inOut((p4 - (BLOCK_AT - 0.13)) / 0.1);
+      s.rise = finale || T < 3 ? 0 : T >= 4 ? 1 : inOut((p4 - (BLOCK_AT - 0.27)) / 0.1); // rises in the path while the sphere is still approaching
       s.branchP = !finale && T >= 4 ? smooth((p5 - 0.2) / 0.35) : 0;
       s.run = T >= 4 ? 1 : T < 3 ? 0 : p4;
       s.frames++;

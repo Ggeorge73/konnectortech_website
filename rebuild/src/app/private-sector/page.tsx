@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getServices } from '@/lib/content';
-import { callHref, promises, sectors, site } from '@/lib/site';
+import { callHref, promises, sectors, site, callLabel } from '@/lib/site';
 import { CtaBand, PageHead } from '@/components/Page';
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export default function PrivateSector() {
       <PageHead label="Private sector" title="Technology programs that have to land." lede={sectors.private.text}>
         <div className="ctas">
           <Link className="btn btn-primary" href="/contact/?sector=private" data-cta="plan" data-pos="private-head">{site.cta.main}</Link>
-          <a className="btn btn-ghost" href={callHref} data-cta="call" data-pos="private-head">{site.cta.call}</a>
+          <a className="btn btn-ghost" href={callHref} data-cta="call" data-pos="private-head">{callLabel}</a>
         </div>
       </PageHead>
       <section className="section" aria-labelledby="outcomes-title">

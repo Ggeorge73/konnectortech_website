@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { callHref, site, statementHref, statementLabel } from '@/lib/site';
+import { callHref, site, statementHref, statementLabel, callLabel } from '@/lib/site';
 import { getSector, track } from '@/lib/track';
 
 const SECTORS = ['Public sector', 'Private sector', 'Not sure yet'] as const;
@@ -130,7 +130,7 @@ export function EnquiryForm({ pos }: { pos: string }) {
           <li>If we need more detail to shape your plan, we will ask in that reply.</li>
         </ol>
         <div className="ctas">
-          <a className="btn btn-ghost" href={callHref} data-cta="call" data-pos={`${pos}-confirmation`}>{site.cta.call}</a>
+          <a className="btn btn-ghost" href={callHref} data-cta="call" data-pos={`${pos}-confirmation`}>{callLabel}</a>
           <a className="btn btn-ghost" href={statementHref} data-cta="statement" data-pos={`${pos}-confirmation`}>{statementLabel}</a>
         </div>
       </div>
