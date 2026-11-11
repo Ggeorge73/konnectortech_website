@@ -6,5 +6,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  // Preview-only helpers (frame-rate readout, slow-frame simulation) are compiled out of production builds
+  env: { NEXT_PUBLIC_PREVIEW: process.env.SITE_ENV === 'production' ? '' : '1' },
 };
 export default nextConfig;

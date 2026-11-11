@@ -56,9 +56,13 @@ async function glb(name, { textures, oneClip }) {
 await glb('room', { textures: true });
 await glb('room_lines', {});
 await glb('sphere', { oneClip: 'Transform' });
-for (const [size, tag] of [[2048, 'full'], [640, 'light']]) {
-  await pngToKtx2(path.join(IN, 'room_dim.png'), path.join(OUT, `room_dim.${tag}.ktx2`), size);
-  await pngToKtx2(path.join(IN, 'room_lit.png'), path.join(OUT, `room_lit.${tag}.ktx2`), size);
+// Full tier: KTX2 at 2048 px. Light tier: JPG at 640 px, so phones skip the 256 KB KTX2 decoder.
+for (const name of ['room_dim', 'room_lit']) {
+  await pngToKtx2(path.join(IN, `${name}.png`), path.join(OUT, `${name}.full.ktx2`), 2048);
+  const jpg = path.join(OUT, `${name}.light.jpg`);
+  await sharp(path.join(IN, `${name}.png`)).resize(640, 640).jpeg({ quality: 80 }).toFile(jpg);
+  report.push([path.basename(jpg), kb(jpg)]);
+  fs.rmSync(path.join(OUT, `${name}.light.ktx2`), { force: true });
 }
 
 const sum = (tag) => fs.readdirSync(OUT).filter((f) => f.endsWith('.glb') || f.includes(`.${tag}.`)).reduce((n, f) => n + fs.statSync(path.join(OUT, f)).size, 0);

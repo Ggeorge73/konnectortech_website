@@ -1,25 +1,30 @@
 """Builds the chrome sphere and its transformation into the Konnector mark, as one animation clip.
 
-36 plates. Each plate starts as a patch of the sphere and ends as one piece of the mark (an arc of a ring node
-or a length of a bar). Per plate, the clip keys: lift off and quarter-turn as a rigid plate, travel, roll into
-the piece (a shape key), and lock with a small overshoot. Inside sit a hub and three pistons that push out
-toward the three nodes. The site sets the clip's time from the scroll.
+36 rigid plates. Nothing bends: every plate only moves and turns.
+Each plate is one rigid part made of two things welded together:
+  - a patch of the sphere's shell (what you see while it is a sphere), and
+  - one piece of the mark (an arc of a ring node, or a length of a bar), tucked under the shell, inside the sphere.
+The clip: each plate lifts off, turns over (unfolds) so its piece of the mark faces out, travels, and clamps onto an
+inner frame. The locked plates form the mark; their shell patches end up edge-on behind it, like fins.
+Inside sit a hub, three pistons that push out toward the three nodes, and the thin frame the plates clamp onto.
 
-Output: art/out/sphere.glb (nodes plate_00..plate_35, hub, piston_0..2; animation "Transform", 4 s at 24 fps).
-First pass for the pipeline: timing and plate design are not locked until the art gate.
+Output: art/out/sphere.glb. Nodes plate_00..plate_35, hub, piston_0..2 (barrel_*, rod_*), frame_*.
+One animation per object in Blender; compress.mjs merges them into one clip named "Transform" (4 s at 24 fps).
 """
 import math
 import sys
 
 import bpy  # must come first
-from mathutils import Quaternion, Vector
+import bmesh
+from mathutils import Matrix, Quaternion, Vector
 
 OUT = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else "out"
 R = 0.3
 S = 0.0195  # site units per unit of the logo's 70 x 62 drawing
-NU, NV = 10, 6
+NU, NV = 8, 6
 TUBE, RING = 2.5 * S, 6.5 * S
 FPS, FRAMES = 24, 96
+TUCK = TUBE + 0.03  # how far under the shell each piece of the mark sits
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -28,134 +33,158 @@ scene.frame_start, scene.frame_end = 0, FRAMES
 
 
 def logo(x, y):  # logo drawing -> site space (x right, y up), centred
-    return ((x - 35) * S, (31 - y) * S)
+    return Vector(((x - 35) * S, (31 - y) * S, 0.0))
 
 
 NODES = [logo(35, 9), logo(10, 51), logo(60, 51)]
 BARS = [
-    [logo(31.5, 14.5), logo(13.5, 45.5)],
-    [logo(38.5, 14.5), logo(43, 22), logo(37, 33), logo(56.5, 45.5)],
-    [logo(16.5, 51), logo(28, 51), logo(31, 47), logo(35, 51), logo(53.5, 51)],
+    [logo(31.5, 14.5), logo(13.5, 45.5)],  # straight, like the plan
+    [logo(38.5, 14.5), logo(43, 22), logo(37, 33), logo(56.5, 45.5)],  # bent, like the real world
+    [logo(16.5, 51), logo(28, 51), logo(31, 47), logo(35, 51), logo(53.5, 51)],  # the bump in the base
 ]
+Z = Vector((0, 0, 1))
 
 
-def site(x, y, z):  # site space -> Blender space
-    return Vector((x, -z, y))
+def site(v):  # site space (x right, y up, z toward the camera) -> Blender space
+    return Vector((v.x, -v.z, v.y))
 
 
-def sphere_plates():
-    counts, lat, gap, out = [4, 8, 12, 8, 4], [math.radians(d) for d in (-90, -54, -18, 18, 54, 90)], 0.014, []
-    for b, count in enumerate(counts):
-        for i in range(count):
-            lon0 = (i + (b % 2) * 0.5) / count * math.tau + gap
-            lon1 = (i + 1 + (b % 2) * 0.5) / count * math.tau - gap
-            la0 = lat[b] + (0 if b == 0 else gap)
-            la1 = lat[b + 1] - (0 if b == len(counts) - 1 else gap)
-            out.append(lambda u, v, lon0=lon0, lon1=lon1, la0=la0, la1=la1: (
-                R * math.cos(la0 + (la1 - la0) * v) * math.sin(lon0 + (lon1 - lon0) * u),
-                R * math.sin(la0 + (la1 - la0) * v),
-                R * math.cos(la0 + (la1 - la0) * v) * math.cos(lon0 + (lon1 - lon0) * u)))
-    return out
-
-
-def mark_pieces():
-    out = []
-    phi = lambda v: -math.pi / 2 + v * math.tau  # seam at the back
-    for cx, cy in NODES:
-        for i in range(8):
-            t0, t1 = i / 8 * math.tau, (i + 1) / 8 * math.tau
-            out.append(lambda u, v, cx=cx, cy=cy, t0=t0, t1=t1: (
-                cx + (RING + TUBE * math.cos(phi(v))) * math.cos(t0 + (t1 - t0) * u),
-                cy + (RING + TUBE * math.cos(phi(v))) * math.sin(t0 + (t1 - t0) * u),
-                TUBE * math.sin(phi(v))))
-    for pts in BARS:
-        P = [Vector(p) for p in pts]
-        perp = lambda d: Vector((-d.y, d.x))
-        miters = []
-        for j in range(len(P)):
-            d_in = (P[j] - P[j - 1]).normalized() if j > 0 else None
-            d_out = (P[j + 1] - P[j]).normalized() if j < len(P) - 1 else None
-            if d_in is None:
-                miters.append(perp(d_out))
-            elif d_out is None:
-                miters.append(perp(d_in))
-            else:
-                m = (perp(d_in) + perp(d_out)).normalized()
-                miters.append(m / max(0.35, m.dot(perp(d_in))))
-        for j in range(len(P) - 1):
-            length = (P[j + 1] - P[j]).length
-            parts = 3 if length > 30 * S else 2 if length > 15 * S else 1
-            for k in range(parts):
-                s0, s1 = k / parts, (k + 1) / parts
-                a, b, ma, mb = P[j], P[j + 1], miters[j], miters[j + 1]
-                out.append(lambda u, v, a=a, b=b, ma=ma, mb=mb, s0=s0, s1=s1: (
-                    a.x + (b.x - a.x) * (s0 + (s1 - s0) * u) + (ma.x + (mb.x - ma.x) * (s0 + (s1 - s0) * u)) * TUBE * math.cos(phi(v)),
-                    a.y + (b.y - a.y) * (s0 + (s1 - s0) * u) + (ma.y + (mb.y - ma.y) * (s0 + (s1 - s0) * u)) * TUBE * math.cos(phi(v)),
-                    TUBE * math.sin(phi(v))))
-    return out
-
-
-def sample(shape):
-    pts = [Vector(shape(i / NU, j / NV)) for j in range(NV + 1) for i in range(NU + 1)]
-    return pts, sum(pts, Vector()) / len(pts)
+def site_matrix(t, b, n, origin):
+    """Object matrix whose local X, Y, Z are the site-space axes t, b, n (a rotation: n = t x b)."""
+    m = Matrix((site(t), site(b), site(n))).transposed().to_4x4()
+    m.translation = site(origin)
+    return m
 
 
 smooth = lambda x: (lambda t: t * t * (3 - 2 * t))(min(1, max(0, x)))
 in_out = lambda x: (lambda t: 4 * t ** 3 if t < 0.5 else 1 - (-2 * t + 2) ** 3 / 2)(min(1, max(0, x)))
 
-A = [sample(s) for s in sphere_plates()]
-B = [sample(s) for s in mark_pieces()]
-ang = lambda c: math.atan2(c.y, c.x)
-ai = sorted(range(len(A)), key=lambda i: (round(ang(A[i][1]), 6), A[i][1].z))
-bi = sorted(range(len(B)), key=lambda i: ang(B[i][1]))
-faces = [(j * (NU + 1) + i, j * (NU + 1) + i + 1, (j + 1) * (NU + 1) + i + 1, (j + 1) * (NU + 1) + i) for j in range(NV) for i in range(NU)]
+# ── The 36 shell patches of the sphere ──
+patches = []
+counts, lat, gap = [4, 8, 12, 8, 4], [math.radians(d) for d in (-90, -54, -18, 18, 54, 90)], 0.014
+for band, count in enumerate(counts):
+    for i in range(count):
+        lon0 = (i + (band % 2) * 0.5) / count * math.tau + gap
+        lon1 = (i + 1 + (band % 2) * 0.5) / count * math.tau - gap
+        la0 = lat[band] + (0 if band == 0 else gap)
+        la1 = lat[band + 1] - (0 if band == len(counts) - 1 else gap)
+        pts = []
+        for j in range(NV + 1):
+            for k in range(NU + 1):
+                lo, la = lon0 + (lon1 - lon0) * k / NU, la0 + (la1 - la0) * j / NV
+                pts.append(Vector((R * math.cos(la) * math.sin(lo), R * math.sin(la), R * math.cos(la) * math.cos(lo))))
+        c = sum(pts, Vector()) / len(pts)
+        n = c.normalized()
+        t = Vector((0, 1, 0)).cross(n)
+        t = t.normalized() if t.length > 1e-3 else Vector((1, 0, 0))
+        b = n.cross(t)
+        local = [Vector(((p - c).dot(t), (p - c).dot(b), (p - c).dot(n))) for p in pts]
+        patches.append({"c": c, "t": t, "b": b, "n": n, "local": local, "bmax": max(v.y for v in local)})
+
+# ── The 36 pieces of the mark: 24 ring arcs and 12 bar lengths ──
+pieces = []
+for node in NODES:
+    for i in range(8):
+        mid = (i + 0.5) / 8 * math.tau
+        r = Vector((math.cos(mid), math.sin(mid), 0))
+        pieces.append({"kind": "arc", "mid": node + r * RING, "t": Z.cross(r), "half": math.pi / 8})
+for pts in BARS:
+    for j in range(len(pts) - 1):
+        a, b = pts[j], pts[j + 1]
+        length = (b - a).length
+        parts = 3 if length > 30 * S else 2 if length > 15 * S else 1
+        for k in range(parts):
+            p0, p1 = a.lerp(b, k / parts), a.lerp(b, (k + 1) / parts)
+            pieces.append({"kind": "bar", "mid": (p0 + p1) / 2, "t": (p1 - p0).normalized(), "half": (p1 - p0).length / 2})
+
+# Pair shell patches with pieces by angle around the centre, so plates sweep outward instead of crossing
+ang = lambda v: math.atan2(v.y, v.x)
+pi_ = sorted(range(36), key=lambda i: (round(ang(patches[i]["c"]), 6), patches[i]["c"].z))
+qi_ = sorted(range(36), key=lambda i: ang(pieces[i]["mid"]))
 
 chrome = bpy.data.materials.new("chrome")
 chrome.use_nodes = True
-bsdf = chrome.node_tree.nodes["Principled BSDF"]
-bsdf.inputs["Metallic"].default_value = 1.0
-bsdf.inputs["Roughness"].default_value = 0.04
+chrome.node_tree.nodes["Principled BSDF"].inputs["Metallic"].default_value = 1.0
+chrome.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.04
 dark = bpy.data.materials.new("mechanism")
 dark.use_nodes = True
 dark.node_tree.nodes["Principled BSDF"].inputs["Metallic"].default_value = 1.0
 dark.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = 0.4
 dark.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.1, 0.11, 0.13, 1)
 
-for n, (pa, pb) in enumerate(zip(ai, bi)):
-    (a_pts, ca), (b_pts, cb) = A[pa], B[pb]
+
+def tube(bm, centres, tangents, radius, segs=12):
+    """A tube through `centres` in plate-local space; cross-sections are perpendicular to each tangent."""
+    rings = []
+    for c, tan in zip(centres, tangents):
+        u = Vector((0, 1, 0))
+        w = tan.cross(u).normalized()
+        rings.append([bm.verts.new(c + (u * math.cos(f) + w * math.sin(f)) * radius) for f in (k / segs * math.tau for k in range(segs))])
+    for r0, r1 in zip(rings, rings[1:]):
+        for k in range(segs):
+            bm.faces.new((r0[k], r0[(k + 1) % segs], r1[(k + 1) % segs], r1[k]))
+
+
+for n, (pa, qa) in enumerate(zip(pi_, qi_)):
+    patch, piece = patches[pa], pieces[qa]
+    bm = bmesh.new()
+    # shell patch
+    verts = [bm.verts.new(v) for v in patch["local"]]
+    for j in range(NV):
+        for k in range(NU):
+            i0 = j * (NU + 1) + k
+            bm.faces.new((verts[i0], verts[i0 + 1], verts[i0 + NU + 2], verts[i0 + NU + 1]))
+    # its piece of the mark, tucked under one edge of the shell (local axes: x along the piece, y across the shell, z outward)
+    b_s, n_s = patch["bmax"] - TUBE - 0.004, -TUCK
+    if piece["kind"] == "arc":
+        thetas = [-piece["half"] + 2 * piece["half"] * k / 6 for k in range(7)]
+        centres = [Vector((RING * math.sin(th), b_s, n_s - RING + RING * math.cos(th))) for th in thetas]
+        tangents = [Vector((math.cos(th), 0, -math.sin(th))) for th in thetas]
+    else:
+        centres = [Vector((-piece["half"], b_s, n_s)), Vector((piece["half"], b_s, n_s))]
+        tangents = [Vector((1, 0, 0))] * 2
+        for end in centres:  # round ends, so the bends between bar lengths close cleanly
+            cap = bmesh.ops.create_uvsphere(bm, u_segments=12, v_segments=6, radius=TUBE)
+            bmesh.ops.translate(bm, verts=cap["verts"], vec=end)
+    tube(bm, centres, tangents, TUBE)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     mesh = bpy.data.meshes.new(f"plate_{n:02d}")
-    mesh.from_pydata([site(*(p - ca)) for p in a_pts], [], faces)
+    bm.to_mesh(mesh)
+    bm.free()
     for poly in mesh.polygons:
         poly.use_smooth = True
     mesh.materials.append(chrome)
     obj = bpy.data.objects.new(f"plate_{n:02d}", mesh)
     scene.collection.objects.link(obj)
-    obj.shape_key_add(name="Basis")
-    key = obj.shape_key_add(name="piece")
-    for v, p in zip(key.data, b_pts):
-        v.co = site(*(p - cb))
+
+    # Rest pose: on the sphere. Final pose: the piece sits on the mark facing the camera, the shell edge-on behind it.
+    rest = site_matrix(patch["t"], patch["b"], patch["n"], patch["c"])
+    t1, b1 = piece["t"], Z
+    n1 = t1.cross(b1)
+    final = site_matrix(t1, b1, n1, piece["mid"] - n1 * n_s - b1 * b_s)
+    p0, q0 = rest.translation.copy(), rest.to_quaternion()
+    p1, q1 = final.translation.copy(), final.to_quaternion()
+    if q0.dot(q1) < 0:
+        q1.negate()
+    lift_dir = site(patch["n"])
+    order = (patch["c"].y / R + 1) / 2
     obj.rotation_mode = "QUATERNION"
-    axis = site(*ca).normalized()
-    order, spin = (ca.y / R + 1) / 2, 1 if n % 2 else -1
     for f in range(FRAMES + 1):
         tau = f / FRAMES
-        e = min(1, max(0, (tau - (1 - order) * 0.42) / 0.55))  # top of the sphere goes first
-        k1 = smooth(e / 0.4)  # lift off and turn, rigid
-        k2 = in_out((e - 0.4) / 0.6)  # travel, roll into the piece, lock
+        e = min(1, max(0, (tau - (1 - order) * 0.42) / 0.55))  # the top of the sphere goes first
+        k1 = smooth(e / 0.35)  # lift off the sphere
+        k2 = in_out((e - 0.3) / 0.7)  # turn over, travel, clamp
         x = (k2 - 0.8) / 0.2
-        over = 1 + 0.05 * math.sin(math.pi * x) if 0 < x < 1 else 1  # about 5% overshoot, then settle
-        start = site(*ca) + axis * (0.17 * k1 * (1 - k2))
-        obj.location = start.lerp(site(*cb), k2)
-        obj.rotation_quaternion = Quaternion(axis, k1 * (math.pi / 2) * spin * (1 - k2))
-        obj.scale = (over, over, over)
-        key.value = k2
-        for path in ("location", "rotation_quaternion", "scale"):
-            obj.keyframe_insert(path, frame=f)
-        key.keyframe_insert("value", frame=f)
+        over = k2 + (0.05 * math.sin(math.pi * x) if 0 < x < 1 else 0)  # clamps about 5% past, then settles
+        obj.location = (p0 + lift_dir * 0.17 * k1).lerp(p1, over)
+        obj.rotation_quaternion = q0.slerp(q1, min(1, k2))
+        obj.keyframe_insert("location", frame=f)
+        obj.keyframe_insert("rotation_quaternion", frame=f)
 
-# Mechanism: a hub and three pistons that extend toward the nodes, then retract as the mark locks
-def cylinder(name, radius, depth, mat):
-    bpy.ops.mesh.primitive_cylinder_add(vertices=20, radius=radius, depth=depth)
+
+# ── Mechanism: hub, three pistons, and the thin frame the plates clamp onto ──
+def primitive(name, mat, make):
+    make()
     o = bpy.context.object
     o.name = name
     o.data.materials.append(mat)
@@ -163,35 +192,55 @@ def cylinder(name, radius, depth, mat):
     return o
 
 
-hub = cylinder("hub", 0.075, 0.09, dark)
+def key_scale(o, f, s):
+    o.scale = (s, s, s)
+    o.keyframe_insert("scale", frame=f)
+
+
+hub = primitive("hub", dark, lambda: bpy.ops.mesh.primitive_cylinder_add(vertices=20, radius=0.075, depth=0.09))
 hub.rotation_euler = (math.pi / 2, 0, 0)
 pistons = []
-for i, (nx, ny) in enumerate(NODES):
-    length = math.hypot(nx, ny) - RING
+for i, node in enumerate(NODES):
+    length = node.length - RING
     arm = bpy.data.objects.new(f"piston_{i}", None)
     scene.collection.objects.link(arm)
-    arm.rotation_euler = (0, -(math.atan2(ny, nx) - math.pi / 2), 0)  # aim along the node direction (Blender XZ plane)
-    barrel = cylinder(f"barrel_{i}", 0.03, length * 0.5, dark)
+    arm.rotation_euler = (0, -(math.atan2(node.y, node.x) - math.pi / 2), 0)
+    barrel = primitive(f"barrel_{i}", dark, lambda: bpy.ops.mesh.primitive_cylinder_add(vertices=16, radius=0.03, depth=length * 0.5))
     barrel.parent = arm
     barrel.location = (0, 0, length * 0.25 + 0.03)
-    rod = cylinder(f"rod_{i}", 0.014, 1.0, chrome)
+    rod = primitive(f"rod_{i}", chrome, lambda: bpy.ops.mesh.primitive_cylinder_add(vertices=12, radius=0.014, depth=1.0))
     rod.parent = arm
     pistons.append((arm, rod, length))
+frame = []
+for i, node in enumerate(NODES):
+    ring = primitive(f"frame_ring_{i}", dark, lambda: bpy.ops.mesh.primitive_torus_add(major_radius=RING, minor_radius=0.018, major_segments=32, minor_segments=8))
+    ring.rotation_euler = (math.pi / 2, 0, 0)
+    ring.location = site(node)
+    frame.append(ring)
+k = 0
+for pts in BARS:
+    for a, b in zip(pts, pts[1:]):
+        bar = primitive(f"frame_bar_{k}", dark, lambda: bpy.ops.mesh.primitive_cylinder_add(vertices=10, radius=0.016, depth=(b - a).length))
+        bar.rotation_mode = "QUATERNION"
+        bar.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(site(b - a).normalized())
+        bar.location = site((a + b) / 2)
+        frame.append(bar)
+        k += 1
 for f in range(FRAMES + 1):
     tau = f / FRAMES
-    show = max(0.001, smooth((tau - 0.04) / 0.14) * (1 - smooth((tau - 0.8) / 0.16)))
-    ext = smooth((tau - 0.12) / 0.38) * (1 - smooth((tau - 0.72) / 0.2))
-    hub.scale = (show, show, show)
-    hub.keyframe_insert("scale", frame=f)
+    show = max(0.001, smooth((tau - 0.04) / 0.14) * (1 - smooth((tau - 0.82) / 0.14)))  # hub and pistons retract once the mark has locked
+    ext = smooth((tau - 0.12) / 0.38) * (1 - smooth((tau - 0.74) / 0.2))
+    key_scale(hub, f, show)
     for arm, rod, length in pistons:
-        arm.scale = (show, show, show)
-        arm.keyframe_insert("scale", frame=f)
+        key_scale(arm, f, show)
         l = max(0.001, length * (0.45 + 0.55 * ext))
         rod.scale = (1, 1, l)
         rod.location = (0, 0, l / 2 + 0.03)
         rod.keyframe_insert("scale", frame=f)
         rod.keyframe_insert("location", frame=f)
+    for part in frame:  # the frame is pushed out by the pistons and stays: the plates clamp onto it
+        key_scale(part, f, max(0.001, smooth((tau - 0.3) / 0.3)))
 
 bpy.ops.wm.save_as_mainfile(filepath=f"{OUT}/sphere.blend")
-bpy.ops.export_scene.gltf(filepath=f"{OUT}/sphere.glb", export_format="GLB", export_yup=True, export_animations=True, export_animation_mode="SCENE", export_morph=True, export_morph_normal=True, export_frame_range=True, export_materials="EXPORT")
+bpy.ops.export_scene.gltf(filepath=f"{OUT}/sphere.glb", export_format="GLB", export_yup=True, export_animations=True, export_frame_range=True, export_materials="EXPORT")
 print("exported sphere.glb")

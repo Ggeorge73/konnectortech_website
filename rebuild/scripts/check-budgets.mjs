@@ -18,15 +18,15 @@ const modelFiles = fs.existsSync(path.join(out, 'models')) ? walk(path.join(out,
 const tierModels = (tier, other) => modelFiles.filter((f) => !f.includes(`.${other}.`)).reduce((n, f) => n + fs.statSync(f).size, 0);
 // 3D code = the lazy chunks plus the texture transcoder the KTX2 textures need
 const basis = fs.existsSync(path.join(out, 'basis')) ? walk(path.join(out, 'basis')).reduce((n, f) => n + gz(f), 0) : 0;
-const code3d = lazy.reduce((n, f) => n + gz(f), 0) + basis;
-console.log(`  3D code ${kb(code3d)} compressed; model files: Full ${kb(tierModels('full', 'light'))}, Light ${kb(tierModels('light', 'full'))}`);
+const code3d = lazy.reduce((n, f) => n + gz(f), 0); // the KTX2 decoder (basis) is downloaded by the Full tier only
+console.log(`  3D code ${kb(code3d)} compressed (+ ${kb(basis)} KTX2 decoder on Full); model files: Full ${kb(tierModels('full', 'light'))}, Light ${kb(tierModels('light', 'full'))}`);
 const poster = fs.statSync(path.join(out, 'stills/poster.jpg')).size + fs.statSync(path.join(out, 'stills/scene-1.jpg')).size;
 
 const checks = [
   ['First-load script + HTML on the home page (compressed) under 200 KB', firstLoad, 200 * 1024],
   ['3D code is not in the first load (loaded after first paint)', scripts.some((s) => /WebGLRenderer|ScrollTrigger/.test(fs.readFileSync(path.join(out, s), 'utf8'))) ? 1 : 0, 0.5],
   ['Light tier: 3D code + model files under 1.5 MB', code3d + tierModels('light', 'full'), 1.5 * 1024 * 1024],
-  ['Full tier: 3D code + model files under 3 MB', code3d + tierModels('full', 'light'), 3 * 1024 * 1024],
+  ['Full tier: 3D code + KTX2 decoder + model files under 3 MB', code3d + basis + tierModels('full', 'light'), 3 * 1024 * 1024],
   ['Hero still images under 200 KB', poster, 200 * 1024],
 ];
 let failed = false;

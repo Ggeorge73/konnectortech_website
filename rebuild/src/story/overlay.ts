@@ -23,6 +23,8 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
   const dockU = serviceLis.map((li) => clamp(s.path.uTrack * inOut((parseFloat(li.dataset.at || '0') - 0.1) / 0.8)));
   const sidePanel = document.querySelector<HTMLElement>('[data-scene="3"] .panel');
   const panelRight = () => (sidePanel ? sidePanel.getBoundingClientRect().right : 0);
+  const scanPanel = document.querySelector<HTMLElement>('[data-scene="2"] .panel');
+  const scanPanelRight = () => (scanPanel && !s.mobile && s.T < 2.1 ? Math.max(0, scanPanel.getBoundingClientRect().right) : 0);
   const place = (e: HTMLElement, x: number, y: number, opacity: number, extra = '') => {
     e.style.opacity = opacity.toFixed(3);
     if (opacity > 0.001) e.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)${extra}`;
@@ -73,17 +75,26 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
         const armA = -(s.roomU.uArm0.value + ((sweep * 3) % 1) * Math.PI * 2);
         place(armEl, s.sphereScreen.x, s.sphereScreen.y, sweep > 0.002 && sweep < 0.998 ? 0.9 : 0, ` rotate(${armA.toFixed(4)}rad) scaleX(${(Math.hypot(s.W, s.H) * 0.46).toFixed(1)})`);
 
-        const tagsOn = finale ? 0 : smooth((p2 - 0.5) / 0.06) * (1 - smooth((T - 3.02) / 0.15));
+        const tagsOn = finale ? 0 : smooth((p2 - 0.46) / 0.05) * (1 - smooth((T - 3.02) / 0.15));
+        // The five system labels never overlap: each is nudged up until it is clear of the ones already placed,
+        // and kept inside the frame and clear of the text panel.
+        const boxes: [number, number, number, number][] = [];
+        const left = scanPanelRight() + 12;
         SYSTEM_ANCHORS.forEach((a, i) => {
-          tmp.set(a.x < 0 ? a.x * 0.85 : a.x * 1.25, TAG_Y[i], a.z); // left-side labels sit nearer the aisle, clear of the text panel
+          tmp.set(a.x < 0 ? a.x * 0.85 : a.x * 1.25, TAG_Y[i], a.z);
           const ok = project(tmp);
-          place(sysEls[i], scr.x, scr.y, ok ? tagsOn : 0);
+          const w = sysEls[i].offsetWidth || 110, h = 24;
+          const x = clamp(scr.x, Math.min(left + w / 2, s.W - w / 2 - 8), s.W - w / 2 - 8);
+          let y = clamp(scr.y, 96, s.H - 40);
+          for (let n = 0; n < 30 && boxes.some(([x0, y0, x1, y1]) => x - w / 2 < x1 + 8 && x + w / 2 > x0 - 8 && y - h < y1 + 4 && y > y0 - 4); n++) y -= 10;
+          if (ok && tagsOn > 0.001) boxes.push([x - w / 2, y - h, x + w / 2, y]);
+          place(sysEls[i], x, y, ok ? tagsOn : 0);
           sysEls[i].classList.toggle('is-lit', s.lit[i + 1] > 0.5);
         });
         gapPoints.forEach((g, i) => {
           const ok = project(g);
           const open = s.u < gapU[i] && T < 3 && !finale ? 1 : 0;
-          place(gapEls[i], scr.x, scr.y, ok ? smooth((p2 - 0.52) / 0.06) * open : 0);
+          place(gapEls[i], scr.x, scr.y, ok ? smooth((p2 - 0.48) / 0.05) * open : 0);
           gapEls[i].classList.toggle('is-hot', s.hotGap === i);
         });
         // Scene 3 (desktop): each service panel docks onto the line itself and rides it behind the sphere.

@@ -77,6 +77,19 @@ test.describe('tier matrix: the full story is the default', () => {
     await r.context.close();
   });
 
+  test('step-down ladder: slow frames walk Full, Light, Light at lower resolution, then brief mode', async ({ browser }) => {
+    // ?simulate-slow=1 (preview builds only) makes the story treat every frame as taking 200 ms
+    const r = await open(browser, { renderer: NVIDIA }, '/?simulate-slow=1');
+    expect([r.mode, r.tier]).toEqual(['story', 'full']);
+    const html = r.page.locator('html');
+    await expect(html).toHaveAttribute('data-tier', 'light', { timeout: 40_000 });
+    await expect(html).toHaveAttribute('data-low-res', '1', { timeout: 40_000 });
+    await expect(html).toHaveAttribute('data-mode', 'brief', { timeout: 40_000 });
+    await expect(r.page.getByRole('heading', { level: 1 })).toBeVisible(); // the page carries on in brief mode
+    expect(await r.page.evaluate(() => (window.__ktEvents || []).some((e) => e.event === 'brief_mode_opened' && e.props?.reason === 'slow'))).toBe(true);
+    await r.context.close();
+  });
+
   test('testers can force a tier from the address', async ({ browser }) => {
     const r = await open(browser, { renderer: NVIDIA }, '/?tier=light');
     expect([r.mode, r.tier]).toEqual(['story', 'light']);

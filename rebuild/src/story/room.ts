@@ -50,16 +50,14 @@ void main() {
 }`;
 
 export async function loadRoom(renderer: THREE.WebGLRenderer, tier: 'full' | 'light', uniforms: Record<string, THREE.IUniform>): Promise<RoomAssets> {
-  const ktx2 = new KTX2Loader().setTranscoderPath('/basis/').detectSupport(renderer);
+  // Full: KTX2 textures (2048 px). Light: small JPG textures (640 px), so phones do not download the KTX2 decoder.
+  const ktx2 = tier === 'full' ? new KTX2Loader().setTranscoderPath('/basis/').detectSupport(renderer) : null;
+  const plain = new THREE.TextureLoader();
+  const bake = (name: string): Promise<THREE.Texture> => (ktx2 ? ktx2.loadAsync(`/models/${name}.full.ktx2`) : plain.loadAsync(`/models/${name}.light.jpg`));
   const gltf = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   try {
-    const [room, lineSet, dim, lit] = await Promise.all([
-      gltf.loadAsync('/models/room.glb'),
-      gltf.loadAsync('/models/room_lines.glb'),
-      ktx2.loadAsync(`/models/room_dim.${tier}.ktx2`),
-      ktx2.loadAsync(`/models/room_lit.${tier}.ktx2`),
-    ]);
-    for (const t of [dim, lit]) { t.colorSpace = THREE.NoColorSpace; t.anisotropy = tier === 'full' ? 4 : 1; }
+    const [room, lineSet, dim, lit] = await Promise.all([gltf.loadAsync('/models/room.glb'), gltf.loadAsync('/models/room_lines.glb'), bake('room_dim'), bake('room_lit')]);
+    for (const t of [dim, lit]) { t.colorSpace = THREE.NoColorSpace; t.anisotropy = tier === 'full' ? 4 : 1; t.flipY = false; t.needsUpdate = true; }
     let mesh: THREE.Mesh | null = null, lines: THREE.LineSegments | null = null;
     room.scene.updateMatrixWorld(true);
     lineSet.scene.updateMatrixWorld(true);
@@ -75,6 +73,6 @@ export async function loadRoom(renderer: THREE.WebGLRenderer, tier: 'full' | 'li
       dispose() { dim.dispose(); lit.dispose(); m.geometry.dispose(); l.geometry.dispose(); (m.material as THREE.Material).dispose(); (l.material as THREE.Material).dispose(); },
     };
   } finally {
-    ktx2.dispose();
+    ktx2?.dispose();
   }
 }

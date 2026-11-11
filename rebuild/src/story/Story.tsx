@@ -9,6 +9,7 @@ import { createScrollTime, type ScrollTime } from './scrollTime';
 import { BLOCK_Z, buildWorld, FORK, GATE_Z, subCurve } from './world';
 import { loadRoom, type RoomAssets } from './room';
 import { loadSphereClip, type SphereClip } from './sphereClip';
+import { BLOOM_LAYER, createBloom, OVERLAY_LAYER, type Bloom } from './bloom';
 import { buildMechanism, buildPlates, buildSeamTriangle, MARK_RING, MARK_TUBE, NODES, R } from './sphere';
 import { AMBER, CHROME_FRAG, CHROME_VERT, clamp, CYAN, glowTexture, GRID_FRAG, GRID_VERT, LINK_FRAG, LINK_VERT, mix, NIGHT, ROOM_FRAG, ROOM_VERT, smooth, WIRE } from './shaders';
 import { createOverlay } from './overlay';
@@ -92,7 +93,8 @@ function Lines({ s }: { s: Director }) {
       line.current.visible = !s.finale && s.T >= 2;
       built.main.setDrawRange(0, Math.floor(clamp(s.u) * TUBULAR) * RADIAL * 6);
       built.halo.setDrawRange(0, Math.floor(clamp(s.u) * 300) * RADIAL * 6);
-      if (halo.current) halo.current.visible = s.tier === 'full' && !!line.current?.visible;
+      line.current.layers.enable(BLOOM_LAYER); // Full tier: real bloom on the line. Light tier: the soft halo below stands in for it.
+      if (halo.current) { halo.current.layers.set(OVERLAY_LAYER); halo.current.visible = s.tier === 'light' && line.current.visible; }
     }
     for (const l of built.links) {
       if (l.mesh) l.mesh.visible = s.linkOpacity > 0.001 && s.u < l.u1;
@@ -103,6 +105,7 @@ function Lines({ s }: { s: Director }) {
       const m = branchRefs.current[i];
       if (m) m.visible = s.branchP > 0.001;
       g.setDrawRange(0, Math.floor(s.branchP * 120) * RADIAL * 6);
+      branchRefs.current[i]?.layers.enable(BLOOM_LAYER);
     });
   });
   return (
@@ -133,6 +136,7 @@ function Gates({ s }: { s: Director }) {
       mats[i].color.copy(WIRE).lerp(CYAN, k);
       mats[i].opacity = 0.5 + 0.5 * k;
       g.visible = !s.finale && s.T > 2.6;
+      for (const c of g.children) { if (k > 0.5) c.layers.enable(BLOOM_LAYER); else c.layers.disable(BLOOM_LAYER); } // a ring glows once it has locked
     });
     if (block.current) {
       block.current.visible = s.rise > 0.001;
@@ -206,10 +210,12 @@ function Sphere({ s, env }: { s: Director; env: Env }) {
     b.seamMat.opacity = tau > 0.25 ? 0 : Math.max(0.5, s.pulse, finale ? smooth((q - 0.1) / 0.1) : 0) * (1 - smooth((tau - 0.1) / 0.15));
     b.nodes.forEach((n, i) => {
       const on = smooth((done - i * 0.2) / 0.5);
-      n.sprite.opacity = on * 0.85;
+      n.sprite.opacity = on * (s.tier === 'full' ? 0.25 : 0.85);
       n.ring.opacity = on;
     });
-    if (arrive.current) arrive.current.visible = s.arriveP > 0.001;
+    if (arrive.current) { arrive.current.visible = s.arriveP > 0.001; arrive.current.layers.enable(BLOOM_LAYER); }
+    b.seams.traverse((o) => o.layers.enable(BLOOM_LAYER));
+    // On Full the node glow comes from the bloom; the sprites are the Light-tier stand-in
     b.arriveGeo.setDrawRange(0, Math.floor(s.arriveP * 80) * RADIAL * 6);
   });
 
@@ -223,8 +229,8 @@ function Sphere({ s, env }: { s: Director; env: Env }) {
       {clip ? null : <primitive object={b.mech.group} />}
       {NODES.map((n, i) => (
         <group key={i} position={[n.x, n.y, 0]}>
-          <sprite material={b.nodes[i].sprite} position={[0, 0, 0.02]} scale={MARK_RING * 5.2} />
-          <mesh geometry={b.nodeRing} material={b.nodes[i].ring} position={[0, 0, MARK_TUBE + 0.002]} />
+          <sprite ref={(o) => { o?.layers.set(OVERLAY_LAYER); }} material={b.nodes[i].sprite} position={[0, 0, 0.02]} scale={MARK_RING * 5.2} />
+          <mesh ref={(o) => { o?.layers.enable(BLOOM_LAYER); }} geometry={b.nodeRing} material={b.nodes[i].ring} position={[0, 0, MARK_TUBE + 0.002]} />
         </group>
       ))}
       {/* The line arrives from the edge of the screen and joins the mark's first node */}
@@ -241,9 +247,11 @@ const C_DOORS = new THREE.Vector3(0, 2.3, -74.4), L_DOORS = new THREE.Vector3(0,
 function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director; env: Env; scroll: RefObject<ScrollTime | null>; stage: HTMLElement; hud: HTMLElement; onFail: (r: string) => void; onStepDown: () => void }) {
   const overlay = useMemo(() => createOverlay(s, stage, hud), [s, stage, hud]);
   const sound = useMemo(createSound, []);
-  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999 }), []);
+  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0 }), []);
+  useEffect(() => () => { v.bloom?.dispose(); v.bloom = null; }, [v]);
   useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has('fps')) return;
+    // Preview builds only: the readout is never part of a production build
+    if (process.env.NEXT_PUBLIC_PREVIEW !== '1' || !new URLSearchParams(window.location.search).has('fps')) return;
     const el = document.createElement('div');
     el.setAttribute('style', 'position:fixed;left:10px;bottom:10px;z-index:99;background:#0b1220;color:#7fdbff;border:1px solid #00c2ff;border-radius:6px;padding:5px 9px;font:500 12px ui-monospace,monospace;pointer-events:none');
     document.body.appendChild(el);
@@ -366,7 +374,16 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
       ball.visible = true;
     }
     // Draw. Not while the tab is hidden, and not during scene 6, where the 3D rests.
-    if (s.stageOpacity > 0.001 && !document.hidden) state.gl.render(state.scene, camera);
+    camera.layers.enable(BLOOM_LAYER);
+    camera.layers.enable(OVERLAY_LAYER);
+    if (s.stageOpacity > 0.001 && !document.hidden) {
+      state.gl.render(state.scene, camera);
+      if (s.tier === 'full' && !s.lowRes) {
+        v.bloom ??= createBloom(state.gl, state.scene, camera);
+        if (v.bloomW !== W || v.bloomH !== H) { v.bloom.setSize(W, H); v.bloomW = W; v.bloomH = H; }
+        v.bloom.render();
+      }
+    }
     if (!s.live) { s.live = true; stage.classList.add('is-live'); document.documentElement.dataset.storyReady = '1'; }
 
     overlay.setCamera(camera);
@@ -379,10 +396,12 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     }
 
     // Device tiers: step down quality before falling back. Full → Light → Light at lower resolution → brief mode.
-    if (!s.forced && s.forcedT === null && !document.hidden && v.measured < 120 && s.frames > 20) {
-      v.slow += dt;
-      if (++v.measured === 120) {
-        const avg = v.slow / 120;
+    // (?simulate-slow=1, preview builds only, pretends every frame takes 200 ms so tests can walk the whole ladder.)
+    const span = s.simSlow ? 8 : 120;
+    if ((!s.forced || s.simSlow) && s.forcedT === null && !document.hidden && v.measured < span && s.frames > (s.simSlow ? 2 : 20)) {
+      v.slow += s.simSlow ? 0.2 : dt;
+      if (++v.measured === span) {
+        const avg = v.slow / span;
         // Too slow for this tier: step down one rung and measure again (the last rung is brief mode)
         if (avg > (s.tier === 'full' ? 1 / 36 : 1 / 24)) { v.slow = 0; v.measured = 0; onStepDown(); }
       }
@@ -405,7 +424,7 @@ export default function Story({ stage, hud, onFail }: Props) {
   rung.current = { tier, lowRes };
   const stepDown = () => {
     if (rung.current.tier === 'full') setTier('light');
-    else if (!rung.current.lowRes) { setLowRes(true); document.documentElement.dataset.lowRes = '1'; }
+    else if (!rung.current.lowRes) { setLowRes(true); s.lowRes = true; document.documentElement.dataset.lowRes = '1'; }
     else onFail('slow');
   };
   const s = useMemo(() => createDirector(tier), []); // eslint-disable-line react-hooks/exhaustive-deps
