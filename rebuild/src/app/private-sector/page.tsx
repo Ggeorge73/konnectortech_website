@@ -6,7 +6,7 @@ import { CtaBand, PageHead } from '@/components/Page';
 
 export const metadata: Metadata = {
   title: 'Private sector',
-  description: 'For mid-size and enterprise teams running technology programs that have to land: one accountable partner from first plan to accepted handover.',
+  description: 'For small, mid-size and large organizations, up to enterprise scale, running technology programs that have to land: one accountable partner from first plan to accepted handover.',
   alternates: { canonical: '/private-sector/' },
 };
 

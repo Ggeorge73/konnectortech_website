@@ -103,7 +103,7 @@ export const sectors = {
     key: 'private',
     name: 'Private sector',
     door: 'Private enterprise',
-    text: 'Mid-size and enterprise teams running technology programs that have to land, whatever the industry.',
+    text: 'Small, mid-size and large organizations, up to enterprise scale, running technology programs that have to land, whatever the industry.',
     href: '/private-sector/',
   },
 } as const;

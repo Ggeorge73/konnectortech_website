@@ -462,6 +462,10 @@ html[data-mode='story'] .rail a.is-current + .rail-gates ~ *, html[data-mode='st
   html[data-mode='story'] [data-scene='5'] .door { padding: 8px 10px; }
   html[data-mode='story'] [data-scene='5'] .door b { font-size: 0.92rem; }
   html[data-mode='story'] [data-scene='5'] .door span { font-size: 0.74rem; line-height: 1.35; }
+  /* The private-sector line is longer now: on phones the two cards take tighter spacing, never fewer words */
+  html[data-mode='story'] [data-scene='5'] .door { padding: 7px 9px; }
+  html[data-mode='story'] [data-scene='5'] .door span { line-height: 1.28; }
+  html[data-mode='story'] [data-scene='5'] .doors { gap: 6px; margin-top: 6px; }
   html[data-mode='story'] [data-scene='5'] .ctas { flex-wrap: nowrap; }
   html[data-mode='story'] [data-scene='5'] .ctas .btn { min-height: 40px; padding: 8px 10px; font-size: 0.8rem; flex: 1 1 0; text-align: center; }
   html[data-mode='story'] [data-scene='5'] .panel > p.muted { margin-top: 8px !important; font-size: 0.8rem !important; display: flex; gap: 14px; flex-wrap: wrap; }
