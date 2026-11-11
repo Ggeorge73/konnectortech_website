@@ -86,7 +86,7 @@ covers, so this is worth half an hour of a person's time before launch.
 
 | What | How it was checked | Result |
 | --- | --- | --- |
-| Tier choice | Tests pretend to be 12 kinds of device and browser setting | Each lands on the tier the script names |
+| Tier choice | Tests pretend to be 11 kinds of device and browser setting | Each lands on the tier the script names |
 | Step-down ladder | Test forces slow frames | Full, Light, Light at lower resolution, then brief mode, staying at the same moment of the story |
 | Chrome on a laptop with basic graphics | Owner, real device | Light tier, average 60, 1% low 42, no stalls |
 | Chrome on Android | Owner, real device | Light tier, average 58, 1% low 29, no stalls |
