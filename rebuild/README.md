@@ -18,7 +18,7 @@ moves until you say so.
 | Content | `content/` | Markdown for services and delivery records, `company.json` for credentials, registrations and people. |
 | Names, links, copy | `src/lib/site.ts` | Headlines, buttons, reply promise, booking link, capability statement link. |
 | Form route | `functions/api/contact.js` | Cloudflare Pages Function: rate limit, validation, bot check, lead store (KV), emails, optional lead push. |
-| Tests | `tests/` | 10 unit tests for the form route, 16 end-to-end tests (form, brief mode, story mode, keyboard, axe). |
+| Tests | `tests/` | 10 unit tests for the form route, 57 end-to-end tests (form, brief mode, device tiers, story acceptance, keyboard, axe on 13 pages and 6 story states). Firefox and WebKit run the cross-browser set in CI. |
 
 ## Commands
 
@@ -82,8 +82,8 @@ Nothing here is invented. Each missing item shows as a stamped **DRAFT** in prev
 ## Where this build differs from the script, and why
 
 - **Hosting:** Next.js is exported as static files so it runs on the current Cloudflare Pages setup; the form's server side is a Pages Function (the pattern the live site already uses) instead of a Next.js server route.
-- **3D art:** the corridor, sphere, mark and skyline are built in code, not modelled in Blender. Download size for 3D assets is zero. A 3D artist can later replace `world.ts` and `sphere.ts` with glTF models without touching the timeline.
-- **Screen effects:** film grain and darkened edges are CSS overlays; cyan glow is three sprites on the mark's nodes. There is no bloom pass.
+- **3D art:** the corridor and the sphere's transformation are modelled and animated in Blender by script (`art/`), with plain shapes: racks, trays, shelves and a terminal as clean boxes. A 3D artist can replace the model files without code changes. If a model fails to load, a stand-in built in code takes its place.
+- **Screen effects:** the cyan glow is a real selective bloom pass on the Full tier; the Light tier uses soft sprites instead. Film grain and darkened edges are CSS overlays on the Full tier.
 - **Lead store:** Cloudflare KV (already in use) instead of a database table. Konnector CRM's API needs fields a web enquiry cannot supply, so the CRM push is a signed webhook waiting for an inbound-lead endpoint on the CRM side.
 - **Security headers:** Next.js writes small inline scripts, so `script-src` allows `'unsafe-inline'`. The other directives match the live site.
-- **Not yet done:** testing on real phones and in Safari/Firefox (only headless Chromium was available), Lighthouse timing on a real mid-range phone, and the A/B headline split (one headline is set per build).
+- **Not yet done:** Safari on a real iPhone or Mac, Firefox with 3D on a real laptop, an older phone, a session with a screen reader, real email sending, and the A/B headline split (one headline is set per build). See `docs/phase-5-gate.md`.
