@@ -86,7 +86,33 @@ One test walks the page and confirms: scene reached (1 to 7), sector chosen, but
 | Sound, off by default | In place |
 | Transformation: 4 s, scroll-driven on desktop, self-playing on phones, 8-second video | In place; the video will be re-exported from final art in Phase 4 |
 
-## What I need for the next gate
+## 8. Supporting-page copy review and sign-off
 
-- Supporting-page copy review (service pages, How we deliver, sector pages, About, privacy notice).
-- Two art decisions for Phase 4: widen the corridor into a room so the five labels separate, and how bright the opening scene may be so the chrome sphere has something to reflect.
+Reviewed on 11 Nov 2026 against the script's page table, its voice rules and the site's messaging rules, at the
+owner's request ("if it fits the script and overall plan, go ahead with the sign-off").
+
+| Check | Result |
+| --- | --- |
+| Every page in the script's table exists and does its stated job (services ×4, public sector, private sector, how we deliver, proof, about, contact) | Yes |
+| Blueprint style, no heavy 3D, a small still of the sphere | Yes |
+| Plain words, short sentences, "you" at least as often as "we" on service and sector pages | Yes (About says "we" more, which suits it) |
+| Four signature phrases exact; no filler or hype words | Yes |
+| "Public and private sector", never "government" alone; "End2End" only in the tagline; no numbers | Yes |
+| Sourcing shown only as part of delivery | Yes |
+| Nothing claimed that the script or the current site does not support | **No, at first.** Fixed, see below. |
+
+**What was changed before signing off.** I had written service details that neither the script nor the current
+site states. They were removed or reduced to the current site's own words:
+
+- Integration: "data migration and cutover", "a named owner, a test and a fallback" for every handoff.
+- Staffing: a list of specific roles (delivery leads, analysts, technical specialists).
+- Sourcing: "vendor selection support".
+- How we deliver: "a list of risks, each with an owner", "regular reports", "handover documents".
+- Contact: a description of what the capability statement contains, before the document exists.
+- Privacy notice: promises about business conduct (not selling details, no mailing list). It now states only what the site itself does.
+
+**Signed off** with those changes. One item stays with the owner: the privacy notice is a public legal statement,
+so it should be read by the owner before launch even though its claims match the site's code.
+
+**Phase 2 gate: signed off.** Phase 3 (grey-box story timing) starts from here.
+

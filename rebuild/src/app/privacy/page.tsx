@@ -12,12 +12,11 @@ export default function Privacy() {
         <div className="wrap prose">
           <h2 style={{ marginTop: 0 }}>When you send an enquiry</h2>
           <p>The enquiry form collects only what you type into it: your name, work email, organization, sector, what you need delivered and, if you choose to give it, when it needs to land.</p>
-          <p>We use this to reply to you and to prepare a delivery plan. The enquiry is stored so it cannot be lost, sent to our team by email, and may be recorded in our customer relationship system as a new enquiry. We send you one confirmation email.</p>
-          <h2>What we do not do</h2>
+          <p>We use this to reply to you and to prepare a delivery plan. The enquiry is stored so it cannot be lost, sent to our team by email, and may be recorded in our customer relationship system as a new enquiry. The site sends you one confirmation email.</p>
+          <h2>What the site does not do</h2>
           <ul>
-            <li>We do not sell or rent your details.</li>
-            <li>We do not use advertising trackers.</li>
-            <li>We do not add you to a mailing list because you sent an enquiry.</li>
+            <li>It carries no advertising trackers.</li>
+            <li>It asks for nothing beyond the fields listed above.</li>
           </ul>
           <h2>Site measurement</h2>
           <p>We count visits and a small set of page events, such as a button being pressed or a form being sent, to learn whether the site works for visitors. This measurement does not use advertising cookies and does not build a profile of you.</p>

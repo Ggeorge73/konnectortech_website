@@ -5,10 +5,10 @@ short: Flexible expert staffing
 summary: Skilled consultants added to your team, scaled up or down as the project needs.
 description: Skilled consultants added to your team and scaled up or down with the project, without the cost of permanent headcount.
 covers:
-  - Delivery leads and project managers
-  - Business and systems analysts
-  - Integration and technical specialists
-  - Capacity that scales with the work
+  - Skilled consultants added to your team
+  - Capacity scaled up or down
+  - No permanent headcount cost
+  - One accountable partner
 ---
 
 ## The join this service owns

@@ -22,9 +22,9 @@ We take that seat. You get one partner that owns the plan, runs the delivery and
 
 - **A plan everyone agrees up front.** Scope, schedule, budget and team, with what “accepted” means written down before work starts.
 - **Delivery leadership.** Project and program management that keeps every milestone honest.
-- **A working rhythm.** Agile and SAFe delivery where it fits, and a simpler cadence where it does not.
-- **PMO support.** Reporting, controls and governance your sponsors can rely on.
-- **Risk handled early.** Risks are named, owned and tracked, so a surprise changes the route and not the destination.
+- **Agile and SAFe delivery.** A working rhythm that fits the project.
+- **PMO support.** Support for the office that runs your programs.
+- **Risk and governance.** When reality changes, the plan adapts and the milestones hold.
 
 ## How it connects to the rest
 

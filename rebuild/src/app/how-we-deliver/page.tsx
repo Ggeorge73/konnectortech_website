@@ -11,10 +11,10 @@ export const metadata: Metadata = {
 // What the client receives at each stage, in the order the stages run.
 const receives: Record<number, string[]> = {
   1: ['Your goals and constraints, written down and agreed', 'Acceptance criteria: what “done” will mean for this project'],
-  2: ['An agreed scope, schedule and budget', 'A named team and a single point of accountability', 'A list of risks, each with an owner'],
-  3: ['Systems configured and connected, in working increments', 'Regular, plain reports on progress against the plan', 'Changes handled in the open: the route may bend, the milestones hold'],
+  2: ['An agreed scope, schedule and budget', 'A team, and one accountable partner'],
+  3: ['Systems configured and connected', 'A plan that adapts as reality changes, with the milestones held'],
   4: ['Test results against the criteria you agreed at the start', 'Your formal acceptance, based on evidence'],
-  5: ['A working system in use', 'Trained people and handover documents', 'A clean close, with nothing left half-done'],
+  5: ['A working system', 'Trained people', 'A clean close, with nothing left half-done'],
 };
 
 export default function HowWeDeliver() {
@@ -52,7 +52,7 @@ export default function HowWeDeliver() {
         <div className="wrap prose">
           <h2 style={{ marginTop: 0 }}>When the plan meets a surprise</h2>
           <p>No plan survives a real project untouched. A vendor ships late, a requirement changes, a legacy system holds data nobody expected.</p>
-          <p>We plan for that. Risks are named and owned from stage two. When one lands, the route changes and you are told plainly what moved and why. The milestones and the acceptance criteria stay where you agreed them.</p>
+          <p>The plan adapts when reality changes, and the milestones hold. The acceptance criteria stay where you agreed them.</p>
           <h2>“Done” means accepted</h2>
           <p>We agree what “accepted” means in stage one, before any work starts. In stage four we test against exactly those criteria. A project is finished when you have accepted it, and not before.</p>
         </div>

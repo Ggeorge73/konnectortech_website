@@ -6,9 +6,9 @@ summary: Where a project needs it, we source and integrate the technology, so yo
 description: Technology sourced and integrated as part of delivery, so you deal with one accountable partner instead of many vendors.
 covers:
   - Hardware and software a project needs
-  - Vendor selection support
-  - Sourcing aligned to the delivery plan
-  - Integration of what is sourced
+  - Sourced as part of delivery
+  - Integrated by the same partner
+  - One partner, not many vendors
 ---
 
 ## The join this service owns
