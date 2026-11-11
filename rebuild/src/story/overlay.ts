@@ -75,7 +75,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
 
         const tagsOn = finale ? 0 : smooth((p2 - 0.5) / 0.06) * (1 - smooth((T - 3.02) / 0.15));
         SYSTEM_ANCHORS.forEach((a, i) => {
-          tmp.set(a.x < 0 ? a.x * 0.8 : a.x * 1.6, TAG_Y[i], a.z); // left-side labels sit nearer the aisle, clear of the text panel
+          tmp.set(a.x < 0 ? a.x * 0.85 : a.x * 1.25, TAG_Y[i], a.z); // left-side labels sit nearer the aisle, clear of the text panel
           const ok = project(tmp);
           place(sysEls[i], scr.x, scr.y, ok ? tagsOn : 0);
           sysEls[i].classList.toggle('is-lit', s.lit[i + 1] > 0.5);

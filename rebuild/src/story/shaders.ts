@@ -92,9 +92,17 @@ void main() {
   gl_FragColor = vec4(mix(real, bp, mask), 1.0);
 }`;
 
+// Supports morph targets, so the Blender plates can roll from a sphere patch into a piece of the mark.
 export const CHROME_VERT = /* glsl */ `
+#include <morphtarget_pars_vertex>
 varying vec3 vWN; varying vec3 vWP;
-void main() { vec4 w = modelMatrix * vec4(position, 1.0); vWP = w.xyz; vWN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }`;
+void main() {
+  #include <beginnormal_vertex>
+  #include <morphnormal_vertex>
+  #include <begin_vertex>
+  #include <morphtarget_vertex>
+  vec4 w = modelMatrix * vec4(transformed, 1.0); vWP = w.xyz; vWN = normalize(mat3(modelMatrix) * objectNormal); gl_Position = projectionMatrix * viewMatrix * w;
+}`;
 // Mirror chrome: reflects an environment rendered live from wherever the sphere is.
 export const CHROME_FRAG = /* glsl */ `
 uniform samplerCube uEnv; uniform float uRough; uniform float uGain; uniform float uEdge; uniform vec3 uTint; uniform vec3 uCyan;

@@ -8,6 +8,7 @@ import { createDirector, CENTRE, type Director, type Tier } from './director';
 import { createScrollTime, type ScrollTime } from './scrollTime';
 import { BLOCK_Z, buildWorld, FORK, GATE_Z, subCurve } from './world';
 import { loadRoom, type RoomAssets } from './room';
+import { loadSphereClip, type SphereClip } from './sphereClip';
 import { buildMechanism, buildPlates, buildSeamTriangle, MARK_RING, MARK_TUBE, NODES, R } from './sphere';
 import { AMBER, CHROME_FRAG, CHROME_VERT, clamp, CYAN, glowTexture, GRID_FRAG, GRID_VERT, LINK_FRAG, LINK_VERT, mix, NIGHT, ROOM_FRAG, ROOM_VERT, smooth, WIRE } from './shaders';
 import { createOverlay } from './overlay';
@@ -62,7 +63,7 @@ function GridFloor({ s }: { s: Director }) {
 
 /** The one line, the amber links it replaces, and the two branches at the fork. */
 function Lines({ s }: { s: Director }) {
-  const line = useRef<THREE.Mesh>(null);
+  const line = useRef<THREE.Mesh>(null), halo = useRef<THREE.Mesh>(null);
   const branchRefs = useRef<(THREE.Mesh | null)[]>([]);
   const built = useMemo(() => {
     const { curve, uAnchors } = s.path;
@@ -80,14 +81,18 @@ function Lines({ s }: { s: Director }) {
     }
     const main = new THREE.TubeGeometry(curve, TUBULAR, 0.016, RADIAL);
     const branches = [-1, 1].map((side) => new THREE.TubeGeometry(new THREE.CatmullRomCurve3([FORK.clone(), new THREE.Vector3(side * 1.2, 1.5, -84), new THREE.Vector3(side * 4.2, 1.2, -92), new THREE.Vector3(side * 5.4, 0.6, -104)]), 120, 0.03, RADIAL));
-    return { links, main, branches };
+    // A soft cyan halo around the line stands in for bloom: glow on the connected line only, Full tier only
+    const halo = new THREE.TubeGeometry(curve, 300, 0.07, RADIAL);
+    return { links, main, branches, halo };
   }, [s]);
-  useEffect(() => () => { built.main.dispose(); built.branches.forEach((g) => g.dispose()); built.links.forEach((l) => { l.geometry.dispose(); l.material.dispose(); }); }, [built]);
+  useEffect(() => () => { built.main.dispose(); built.halo.dispose(); built.branches.forEach((g) => g.dispose()); built.links.forEach((l) => { l.geometry.dispose(); l.material.dispose(); }); }, [built]);
 
   useFrame(() => {
     if (line.current) {
       line.current.visible = !s.finale && s.T >= 2;
       built.main.setDrawRange(0, Math.floor(clamp(s.u) * TUBULAR) * RADIAL * 6);
+      built.halo.setDrawRange(0, Math.floor(clamp(s.u) * 300) * RADIAL * 6);
+      if (halo.current) halo.current.visible = s.tier === 'full' && !!line.current?.visible;
     }
     for (const l of built.links) {
       if (l.mesh) l.mesh.visible = s.linkOpacity > 0.001 && s.u < l.u1;
@@ -103,6 +108,7 @@ function Lines({ s }: { s: Director }) {
   return (
     <>
       <mesh ref={line} geometry={built.main} frustumCulled={false}><meshBasicMaterial color={CYAN} toneMapped={false} /></mesh>
+      <mesh ref={halo} geometry={built.halo} frustumCulled={false} visible={false}><meshBasicMaterial color={CYAN} toneMapped={false} transparent opacity={0.13} blending={THREE.AdditiveBlending} depthWrite={false} /></mesh>
       {built.links.map((l, i) => <mesh key={i} ref={(m) => { l.mesh = m; }} geometry={l.geometry} material={l.material} />)}
       {built.branches.map((g, i) => <mesh key={i} ref={(m) => { branchRefs.current[i] = m; }} geometry={g} frustumCulled={false}><meshBasicMaterial color={CYAN} toneMapped={false} /></mesh>)}
     </>
@@ -174,6 +180,16 @@ function Sphere({ s, env }: { s: Director; env: Env }) {
     for (const group of [b.seams, b.mech.group]) group.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
   }, [b]);
 
+  // The Blender-animated transformation replaces the coded plates once it has loaded
+  const [clip, setClip] = useState<SphereClip | null>(null);
+  useEffect(() => {
+    let cancelled = false, loaded: SphereClip | null = null;
+    loadSphereClip({ plate: b.chrome, mechanism: b.dark, rod: b.rod })
+      .then((c) => { if (cancelled) c.dispose(); else { loaded = c; setClip(c); } })
+      .catch((err) => console.warn('Blender sphere clip not loaded; using the coded plates', err));
+    return () => { cancelled = true; loaded?.dispose(); };
+  }, [b]);
+
   useFrame(() => {
     const ball = s.ball;
     if (!ball) return;
@@ -181,8 +197,8 @@ function Sphere({ s, env }: { s: Director; env: Env }) {
     ball.position.copy(s.spherePos);
     ball.position.y += Math.sin(time * 0.9) * 0.022 * s.hover; // at rest it hovers and turns slowly
     if (turn.current) turn.current.rotation.y = Math.sin(time * 0.22) * 0.4 * s.hover;
-    b.plates.update(tau);
-    b.mech.update(tau);
+    if (clip) clip.setProgress(tau);
+    else { b.plates.update(tau); b.mech.update(tau); }
     core.current?.scale.setScalar(Math.max(0.001, 1 - smooth((tau - 0.08) / 0.2)));
     b.chromeU.uRough.value = mix(0.02, 0.3, smooth((tau - 0.75) / 0.25)); // mirror chrome becomes brushed chrome
     b.chromeU.uEdge.value = done * 0.55;
@@ -200,11 +216,11 @@ function Sphere({ s, env }: { s: Director; env: Env }) {
   return (
     <group ref={(g) => { s.ball = g; }}>
       <group ref={turn}>
-        <mesh geometry={b.plates.geo} material={b.chrome} frustumCulled={false} />
+        {clip ? <primitive object={clip.scene} /> : <mesh geometry={b.plates.geo} material={b.chrome} frustumCulled={false} />}
         <mesh ref={core}><sphereGeometry args={[R * 0.975, 32, 20]} /><meshBasicMaterial color="#03060b" /></mesh>
         <primitive object={b.seams} />
       </group>
-      <primitive object={b.mech.group} />
+      {clip ? null : <primitive object={b.mech.group} />}
       {NODES.map((n, i) => (
         <group key={i} position={[n.x, n.y, 0]}>
           <sprite material={b.nodes[i].sprite} position={[0, 0, 0.02]} scale={MARK_RING * 5.2} />
@@ -218,14 +234,22 @@ function Sphere({ s, env }: { s: Director; env: Env }) {
 }
 
 const C_REST = new THREE.Vector3(0, 1.55, 2.2), L_REST = new THREE.Vector3(0.35, 1.4, -6);
-const C_SCAN = new THREE.Vector3(1.25, 2.25, 1.9), L_SCAN = new THREE.Vector3(-0.9, 1.25, -9.5); // still inside the room, a little higher and closer
+const C_SCAN = new THREE.Vector3(1.9, 2.3, 2.0), L_SCAN = new THREE.Vector3(-1.2, 1.2, -9.5); // still inside the room, a little higher and closer
 const C_DOORS = new THREE.Vector3(0, 2.3, -74.4), L_DOORS = new THREE.Vector3(0, 3.6, -112);
 
 /** Runs the frame: director, camera, mask inputs, reflections, the draw itself, then the HUD and content layer. */
 function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director; env: Env; scroll: RefObject<ScrollTime | null>; stage: HTMLElement; hud: HTMLElement; onFail: (r: string) => void; onStepDown: () => void }) {
   const overlay = useMemo(() => createOverlay(s, stage, hud), [s, stage, hud]);
   const sound = useMemo(createSound, []);
-  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0 }), []);
+  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999 }), []);
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has('fps')) return;
+    const el = document.createElement('div');
+    el.setAttribute('style', 'position:fixed;left:10px;bottom:10px;z-index:99;background:#0b1220;color:#7fdbff;border:1px solid #00c2ff;border-radius:6px;padding:5px 9px;font:500 12px ui-monospace,monospace;pointer-events:none');
+    document.body.appendChild(el);
+    v.fpsEl = el;
+    return () => { el.remove(); v.fpsEl = null; };
+  }, [v]);
   const gl = useThree((t) => t.gl);
 
   useEffect(() => {
@@ -347,6 +371,12 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
 
     overlay.setCamera(camera);
     overlay.update();
+
+    // ?fps=1 shows a frame-rate readout, so the 60 (Full) and 30 (Light) budgets can be checked on a real device
+    if (v.fpsEl) {
+      v.fpsT += dt; v.fpsN++;
+      if (v.fpsT >= 0.5) { v.fpsMin = Math.min(v.fpsMin, v.fpsN / v.fpsT); v.fpsEl.textContent = `${s.tier}${document.documentElement.dataset.lowRes ? ' low-res' : ''} · ${Math.round(v.fpsN / v.fpsT)} fps · lowest ${Math.round(v.fpsMin)}`; v.fpsT = 0; v.fpsN = 0; }
+    }
 
     // Device tiers: step down quality before falling back. Full → Light → Light at lower resolution → brief mode.
     if (!s.forced && s.forcedT === null && !document.hidden && v.measured < 120 && s.frames > 20) {

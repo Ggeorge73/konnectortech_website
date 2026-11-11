@@ -20,6 +20,7 @@ OUT = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else "out"
 SAMPLES = int(sys.argv[sys.argv.index("--") + 2]) if "--" in sys.argv and len(sys.argv) > sys.argv.index("--") + 2 else 96
 TEX = 2048
 LIGHT_Z = [-1, -5, -9, -13, -17]
+OUT_SHIFT = 0.9  # keep in step with OUT_SHIFT in src/story/world.ts
 END = -20
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
@@ -37,6 +38,8 @@ def rnd(i):
 
 def box(cx, cy, cz, sx, sy, sz, shade=0.3, system=0, kind=0, bevel=0.0):
     """Axis-aligned box given in site space; converted to Blender space (x, -z, y)."""
+    if abs(cx) > 0.9:  # everything along the walls sits OUT further from the centre line: a room, not a narrow corridor
+        cx += math.copysign(OUT_SHIFT, cx)
     c = Vector((cx, -cz, cy))
     h = Vector((sx / 2, sz / 2, sy / 2))
     verts = [bm.verts.new(c + Vector((dx * h.x, dy * h.y, dz * h.z))) for dx in (-1, 1) for dy in (-1, 1) for dz in (-1, 1)]
@@ -74,13 +77,13 @@ def rack(side, z, system, seed):
 # Shell in 2 m bays, with skirting and a ceiling grid
 for z in range(3, END, -2):
     zc = z - 1
-    box(0, -0.05, zc, 4.4, 0.1, 2, shade=0.24)
-    box(0, 3.05, zc, 4.4, 0.1, 2, shade=0.14)
+    box(0, -0.05, zc, 4.4 + 2 * OUT_SHIFT, 0.1, 2, shade=0.24)
+    box(0, 3.05, zc, 4.4 + 2 * OUT_SHIFT, 0.1, 2, shade=0.14)
     for side in (-1, 1):
         box(side * 2.15, 1.5, zc, 0.1, 3, 2, shade=0.2)
         box(side * 2.08, 0.06, zc, 0.04, 0.12, 2, shade=0.1)
         box(side * 2.08, 1.5, z, 0.05, 3, 0.08, shade=0.16)  # wall rib between bays
-    box(0, 2.98, z, 4.2, 0.05, 0.06, shade=0.1)  # ceiling beam
+    box(0, 2.98, z, 4.2 + 2 * OUT_SHIFT, 0.05, 0.06, shade=0.1)  # ceiling beam
 # End frame of the corridor (an open doorway into the dark)
 box(-1.6, 1.5, END, 1.1, 3, 0.12, shade=0.16)
 box(1.6, 1.5, END, 1.1, 3, 0.12, shade=0.16)
@@ -90,6 +93,12 @@ box(0, 2.75, END, 2.1, 0.5, 0.12, shade=0.16)
 for z in LIGHT_Z:
     box(0, 2.95, z, 0.2, 0.06, 1.56, shade=0.12)
     box(0, 2.915, z, 0.14, 0.015, 1.46, kind=1)
+
+# Narrow wall-wash strips above each rack row (the wider room needs them)
+for z in LIGHT_Z:
+    for side in (-1, 1):
+        box(side * 1.0, 2.95, z - 2, 0.1, 0.04, 1.2, shade=0.12)
+        box(side * 1.0, 2.925, z - 2, 0.06, 0.012, 1.1, kind=1)
 
 # Cable trays, cables and droppers
 for side in (-1, 1):
@@ -243,8 +252,8 @@ def bake(path, strip_strengths, led_strength):
     print("baked", path)
 
 
-bake(f"{OUT}/room_dim.png", 11.0, 0.0)
-bake(f"{OUT}/room_lit.png", 18.0, 14.0)
+bake(f"{OUT}/room_dim.png", 24.0, 0.0)
+bake(f"{OUT}/room_lit.png", 34.0, 14.0)
 
 # ── Export: unlit material with the dim bake; attributes kept for the shader ──
 flat = bpy.data.materials.new("room_baked")

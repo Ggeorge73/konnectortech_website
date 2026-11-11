@@ -65,23 +65,25 @@ const rnd = (i: number) => {
 };
 
 export const LIGHT_Z = [-1, -5, -9, -13, -17];
+export const OUT_SHIFT = 0.9; // keep in step with OUT_SHIFT in art/build_room.py
+type Adder = { add: BoxBatch['add'] };
 export const CORRIDOR_END = -20;
 
 // The five systems the scan reveals. Anchors are where the labels sit and where the line passes.
 export const SYSTEM_ANCHORS = [
-  new THREE.Vector3(-0.95, 1.5, -5), // Finance (rack group, left)
-  new THREE.Vector3(0.95, 1.45, -7.5), // Records (shelf of records, right)
-  new THREE.Vector3(-0.95, 1.5, -10), // Operations (rack group, left)
-  new THREE.Vector3(0.95, 1.2, -12.5), // Legacy system (old terminal, right)
-  new THREE.Vector3(-0.95, 1.5, -15), // Vendor platform (rack group, left)
+  new THREE.Vector3(-1.75, 1.5, -5), // Finance (rack group, left)
+  new THREE.Vector3(1.75, 1.45, -7.5), // Records (shelf of records, right)
+  new THREE.Vector3(-1.75, 1.5, -10), // Operations (rack group, left)
+  new THREE.Vector3(1.75, 1.2, -12.5), // Legacy system (old terminal, right)
+  new THREE.Vector3(-1.75, 1.5, -15), // Vendor platform (rack group, left)
 ];
 export const GATE_Z = [-26, -34, -44, -54, -64];
 export const BLOCK_Z = -39;
 export const FORK = new THREE.Vector3(0, 1.6, -80);
-export const SPHERE_REST = new THREE.Vector3(0.75, 1.45, -3);
+export const SPHERE_REST = new THREE.Vector3(1.0, 1.45, -3);
 export const SKY_SYS = { public: 6, private: 7 };
 
-function rack(b: BoxBatch, side: -1 | 1, z: number, sys: number, seed: number) {
+function rack(b: Adder, side: -1 | 1, z: number, sys: number, seed: number) {
   const x = side * 1.6;
   b.add(x, 1.05, z, 0.7, 2.1, 0.9, { shade: 0.1, sys });
   const fx = side * 1.24;
@@ -100,14 +102,16 @@ export function buildWorld(corridor = true) {
   return b.build();
 }
 
-function buildCorridor(b: BoxBatch) {
+function buildCorridor(raw: BoxBatch) {
+  // Everything along the walls sits OUT_SHIFT further from the centre line (a room, not a narrow corridor)
+  const b: Adder = { add: (cx, cy, cz, sx, sy, sz, o) => raw.add(Math.abs(cx) > 0.9 ? cx + Math.sign(cx) * OUT_SHIFT : cx, cy, cz, sx, sy, sz, o) };
 
   // Shell: floor, ceiling and wall panels in 2 m bays
   for (let z = 3; z > CORRIDOR_END; z -= 2) {
     const zc = z - 1;
     // glow -1 marks the shell: see-through in the blueprint
-    b.add(0, -0.05, zc, 4.4, 0.1, 2, { shade: 0.2, glow: -1 });
-    b.add(0, 3.05, zc, 4.4, 0.1, 2, { shade: 0.12, glow: -1 });
+    b.add(0, -0.05, zc, 4.4 + 2 * OUT_SHIFT, 0.1, 2, { shade: 0.2, glow: -1 });
+    b.add(0, 3.05, zc, 4.4 + 2 * OUT_SHIFT, 0.1, 2, { shade: 0.12, glow: -1 });
     b.add(-2.15, 1.5, zc, 0.1, 3, 2, { shade: 0.17, glow: -1 });
     b.add(2.15, 1.5, zc, 0.1, 3, 2, { shade: 0.17, glow: -1 });
   }

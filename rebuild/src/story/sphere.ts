@@ -165,7 +165,7 @@ export function buildSeamTriangle(mat: THREE.Material) {
     const a = corner[i], b = corner[(i + 1) % 3];
     const pts: THREE.Vector3[] = [];
     for (let k = 0; k <= 16; k++) pts.push(a.clone().lerp(b, k / 16).normalize().multiplyScalar(R * 1.006));
-    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.0035, 5), mat));
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.006, 6), mat));
   }
   return g;
 }

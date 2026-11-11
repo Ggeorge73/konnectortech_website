@@ -56,7 +56,7 @@ async function glb(name, { textures, oneClip }) {
 await glb('room', { textures: true });
 await glb('room_lines', {});
 await glb('sphere', { oneClip: 'Transform' });
-for (const [size, tag] of [[2048, 'full'], [768, 'light']]) {
+for (const [size, tag] of [[2048, 'full'], [640, 'light']]) {
   await pngToKtx2(path.join(IN, 'room_dim.png'), path.join(OUT, `room_dim.${tag}.ktx2`), size);
   await pngToKtx2(path.join(IN, 'room_lit.png'), path.join(OUT, `room_lit.${tag}.ktx2`), size);
 }
