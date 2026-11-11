@@ -124,7 +124,9 @@ html[data-mode='story'] .sound-toggle { display: inline-grid; }
 
 /* ── Scene layer (fixed 3D canvas) and HUD layer. Both are decoration and hidden from screen readers. ── */
 .stage { display: none; }
-html[data-mode='story'] .stage { display: block; position: fixed; inset: 0; z-index: 0; background: var(--night); }
+/* The stage keeps one height for the whole visit (the tallest the screen gets). With inset: 0 it would change size each time a
+   phone's address bar slides away, and the 3D canvas would have to be rebuilt mid-scroll. */
+html[data-mode='story'] .stage { display: block; position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100lvh; z-index: 0; background: var(--night); }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 0.9s var(--ease); }
 .stage.is-live canvas { opacity: var(--stage-opacity, 1); }
 .stage-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 1; transition: opacity 0.9s var(--ease); }

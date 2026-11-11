@@ -101,7 +101,7 @@ Read from the `?fps=1` readout after scrolling the whole story once at a normal 
 | Tier | Passes when |
 | --- | --- |
 | Full | the **average** is near 60, and the **1% low** is at least 50 |
-| Light | the **average** never falls under 30 |
+| Light | the **average** never falls under 30, and the **1% low** is at least 30 (no visible catches) |
 
 - **Average** is all frames drawn divided by the time they took. It says how the visit felt overall.
 - **1% low** is the average rate of the slowest 1% of frames. It says how bad the worst moments were, without one
@@ -177,6 +177,47 @@ it does show honestly *which* frames compile a shader or wait on a download.
 | Logo video | **Ruled out.** The page does not load the video; it is a separate file for other uses. | None. |
 | Sphere reflections | Possible. Each refresh draws the room six more times; the readout counts stalls that fall on a refresh frame. | Already throttled in the previous round. The count will show whether more is needed. |
 | Garbage collection | **Not measured.** It cannot be seen from inside the page; it would show up as "other" stalls with no pattern by scene. | None yet. If the re-test shows scattered "other" stalls, the next step is a memory profile on that device. |
+
+### Second measurement (owner, 11 Nov 2026, new readout)
+
+Both devices chose the Light tier by themselves.
+
+| Device | Average | 1% low | Stalls over 50 ms | Result |
+| --- | --- | --- | --- | --- |
+| Laptop (Intel Iris Plus) | 56 (was 24) | 14 | 7, last 85 ms in scene 7 | Average passes. Stalls fail. |
+| Phone (Adreno 740) | 58 | 16 | 5, last 51 ms in scene 7 | Average passes. Stalls fail. |
+
+The averages are fixed. The few long frames are not: a visit should never visibly catch, so the 1% low must also
+stay at 30 or more on Light.
+
+**A fault in my readout:** every stall was labelled "other". The readout judged a late frame by what happened in
+that same frame. But a frame arrives late because the frame *before* it ran long, so the label was always one frame
+out and a shader compile or a first draw was reported as "other". Causes are now read from the frame before.
+
+**Cause, as far as it can be shown here.** Scrolling the whole story on the software renderer, with the corrected
+labels and the warm-up switched off, gives on the Light tier 4 frames that compile a shader and 6 frames that send
+an object's geometry or texture to the chip for the first time, spread over the scenes where things first appear
+(the links, the line, the gates and block, the skyline, the mechanism and mark). Ten events against the 5 and 7
+stalls measured. The earlier warm-up only compiled shaders. Graphics drivers also put work off until an object
+is really drawn: they finish the shader for that exact use, and upload its geometry and textures.
+
+**Fixes in this round:**
+
+1. **A true warm-up.** Once the models have arrived, every object the story will ever show is drawn once, hidden
+   ones included, into a single pixel of the real frame, plus once in the reflection pass and (Full) the glow pass.
+   It happens while the first scene is on screen and is kept out of the statistics. Re-measured here: 0 shader
+   compiles and 0 first draws mid-story, on both tiers. Draw calls per frame are unchanged.
+2. **The canvas no longer changes size mid-scroll on phones.** The stage was tied to the visible screen, which grows
+   when the address bar slides away; the canvas was then rebuilt. It now keeps one height for the whole visit.
+3. **No layout pass on every scroll event.** The 3D canvas re-measured its position each time the page scrolled.
+   That is switched off; it only needs measuring when the window changes size.
+4. **The scroll timeline is re-measured only when the page height really changes.**
+5. **Readout:** stall causes now include "first draw" and "resize", a count of stalls per scene, the number of
+   frames measured, and how much of the last stall was our own script.
+
+Not proven: that these were the stalls on the two devices. This environment has no graphics chip, so it shows
+which frames do one-off work, not how long that work takes on Intel or Adreno. If stalls remain after this, the
+new labels and the per-scene counts will say where.
 
 ### Why the gate is still not signed off
 

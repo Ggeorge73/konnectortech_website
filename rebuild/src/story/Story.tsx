@@ -259,7 +259,8 @@ const C_DOORS = new THREE.Vector3(0, 2.3, -74.4), L_DOORS = new THREE.Vector3(0,
 function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director; env: Env; scroll: RefObject<ScrollTime | null>; stage: HTMLElement; hud: HTMLElement; onFail: (r: string) => void; onStepDown: () => void }) {
   const overlay = useMemo(() => createOverlay(s, stage, hud), [s, stage, hud]);
   const sound = useMemo(createSound, []);
-  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '', warmed: false, cubeDrawn: false, programs: 0, hist: new Uint32Array(401), statN: 0, statT: 0, statRung: '', hitch: 0, lastHitch: '', hitchBy: {} as Record<string, number> }), []);
+  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '', warmed: false, cubeDrawn: false, programs: 0, hist: new Uint32Array(401), statN: 0, statT: 0, statRung: '', hitch: 0, lastHitch: '', hitchBy: {} as Record<string, number>,
+    quiet: 0, warmCount: -1, warmedThisFrame: false, t0: 0, hitchScene: [0, 0, 0, 0, 0, 0, 0], uploads: 0, sizeKey: '', prev: { compiled: false, loading: false, upload: false, resized: false, cube: false, warm: false, script: 0, scene: 1 } }), []);
   useEffect(() => () => { v.bloom?.dispose(); v.bloom = null; }, [v]);
   useEffect(() => {
     // Preview builds only: the readout is never part of a production build
@@ -312,8 +313,10 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
   // 1. Director: story time → state. Runs before every component's own frame callback.
   useFrame((_, delta) => {
     const dt = Math.min(0.1, delta);
-    s.step(performance.now(), dt, scroll.current?.getT() ?? 0);
-    const locked = s.gateOn.filter(Boolean).length;
+    v.t0 = performance.now(); // start of this frame's own work, for the readout
+    s.step(v.t0, dt, scroll.current?.getT() ?? 0);
+    let locked = 0;
+    for (const on of s.gateOn) if (on) locked++;
     if (locked > v.locked && s.frames > 5) sound.click(); // a soft click when a ring locks
     v.locked = locked;
     sound.tone(Math.abs(s.tau - v.tau) > 1e-4 ? s.tau : -1); // a rising tone for the transformation
@@ -375,6 +378,57 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     s.roomU.uLens.value.set(s.lens.x * s.dpr, (H - s.lens.y) * s.dpr, lensOn > 0.01 ? s.lens.r * lensOn * s.dpr : 0);
     s.roomU.uScan.value.set(s.sphereScreen.x * s.dpr, (H - s.sphereScreen.y) * s.dpr, Math.hypot(W, H) * 0.92 * s.dpr);
 
+    camera.layers.enable(BLOOM_LAYER);
+    camera.layers.enable(OVERLAY_LAYER);
+
+    // Warm-up. Graphics drivers put off real work until an object is first drawn: they finish compiling its shader for
+    // that exact use, and its geometry and textures are sent to the chip. Left alone, that work lands on the frame where
+    // a gate, the block, the skyline or the mechanism first appears, and the frame stalls. So once the models have
+    // arrived, every object the story will ever show is drawn once, hidden ones included, into a single pixel of the
+    // real frame, in the reflection pass and (Full) in the glow pass. The normal draw below then covers that pixel.
+    // It runs again if objects are added later (a model that arrives after the stand-in was warmed).
+    v.quiet = pending.count === 0 ? v.quiet + 1 : 0;
+    v.warmedThisFrame = false;
+    if (v.quiet > 8 && s.frames > 3 && (v.warmCount < 0 || (s.frames % 30 === 0 && s.frames < 1800)) && !(window as unknown as { __ktNoWarm?: boolean }).__ktNoWarm) { // the flag is for before-and-after measurement only
+      let count = 0;
+      state.scene.traverse((o) => { if ((o as THREE.Mesh).geometry || (o as THREE.Sprite).isSprite) count++; });
+      if (count !== v.warmCount) {
+        v.warmCount = count;
+        v.warmed = true;
+        v.warmedThisFrame = true;
+        const hidden: THREE.Object3D[] = [], culled: THREE.Object3D[] = [], ranges: [THREE.BufferGeometry, number, number][] = [];
+        state.scene.traverse((o) => {
+          if (!o.visible) { hidden.push(o); o.visible = true; }
+          if (o.frustumCulled) { culled.push(o); o.frustumCulled = false; }
+          const g = (o as THREE.Mesh).geometry as THREE.BufferGeometry | undefined;
+          if (g && (g.drawRange.start !== 0 || g.drawRange.count !== Infinity)) { ranges.push([g, g.drawRange.start, g.drawRange.count]); g.setDrawRange(0, Infinity); }
+        });
+        try {
+          state.gl.setScissor(0, 0, 1, 1);
+          state.gl.setScissorTest(true);
+          state.gl.render(state.scene, camera);
+          ball.visible = false; // the sphere reads the reflection, so it is never drawn into it
+          s.roomU.uCube.value = 1;
+          env.cam.position.copy(ball.position);
+          env.cam.update(state.gl, state.scene);
+          s.roomU.uCube.value = 0;
+          ball.visible = true;
+          if (s.tier === 'full' && !s.lowRes) {
+            v.bloom ??= createBloom(state.gl, state.scene, camera);
+            if (v.bloomW !== W || v.bloomH !== H) { v.bloom.setSize(W, H); v.bloomW = W; v.bloomH = H; }
+            v.bloom.render();
+          }
+        } finally {
+          state.gl.setScissorTest(false);
+          for (const o of hidden) o.visible = false;
+          for (const o of culled) o.frustumCulled = true;
+          for (const [g, start, n] of ranges) g.setDrawRange(start, n);
+        }
+        v.cubeTick = 0; // the reflection just drawn held every object: redraw the true one now
+        v.tierAt = s.time; // this one frame is long by design: keep it out of the statistics and the step-down watch
+      }
+    }
+
     // Reflections: render the room from where the sphere is
     // Six small renders, so it is done only when the reflection would change: the sphere has moved, the sweep has
     // advanced or the lights have changed. At most every 4th frame on Full and every 12th on Light.
@@ -393,8 +447,6 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
       ball.visible = true;
     }
     // Draw. Not while the tab is hidden, and not during scene 6, where the 3D rests.
-    camera.layers.enable(BLOOM_LAYER);
-    camera.layers.enable(OVERLAY_LAYER);
     state.gl.info.autoReset = false;
     if (s.stageOpacity > 0.001 && !document.hidden) {
       state.gl.render(state.scene, camera);
@@ -407,17 +459,6 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     v.calls = state.gl.info.render.calls; // draw calls this frame: main view + reflections + bloom
     state.gl.info.reset();
 
-    // Warm-up: once every model has arrived, compile every shader the story will ever use, including those of
-    // objects that are hidden until a later scene (gates, block, amber links, grid, glow). Otherwise each would be
-    // compiled the first time it appears, which stalls a frame at the scene changes.
-    if (!v.warmed && pending.count === 0 && s.frames > 3 && !(window as unknown as { __ktNoWarm?: boolean }).__ktNoWarm) { // the flag is for before-and-after measurement only
-      v.warmed = true;
-      const hidden: THREE.Object3D[] = [];
-      state.scene.traverse((o) => { if (!o.visible) { hidden.push(o); o.visible = true; } });
-      const done = state.gl.compileAsync ? state.gl.compileAsync(state.scene, camera) : Promise.resolve(state.gl.compile(state.scene, camera));
-      for (const o of hidden) o.visible = false;
-      void done.catch(() => {});
-    }
     if (!s.live) { s.live = true; stage.classList.add('is-live'); document.documentElement.dataset.storyReady = '1'; }
 
     overlay.setCamera(camera);
@@ -431,31 +472,41 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
       }
       if (v.fpsT >= 0.5) {
         const fps = v.fpsN / v.fpsT;
-        let line2 = 'measuring starts 4 s after load';
+        let line2 = 'measuring starts 4 s after load', line3 = '';
         if (v.statN > 30) {
           // 1% low: the average rate of the slowest 1% of frames
           let need = Math.max(1, Math.ceil(v.statN * 0.01)), n = 0, t = 0;
           for (let ms = 400; ms >= 0 && n < need; ms--) { const c = Math.min(v.hist[ms], need - n); n += c; t += (c * Math.max(ms, 1)) / 1000; }
           const by = Object.entries(v.hitchBy).filter(([, c]) => c > 0).map(([k, c]) => `${c} ${k}`).join(', ');
-          line2 = `average ${Math.round(v.statN / v.statT)} · 1% low ${Math.round(n / t)} · stalls over 50 ms: ${v.hitch}${by ? ` (${by})` : ''}${v.lastHitch ? ` · last: ${v.lastHitch}` : ''}`;
+          line2 = `average ${Math.round(v.statN / v.statT)} · 1% low ${Math.round(n / t)} · ${v.statN} frames`;
+          line3 = `\nstalls over 50 ms: ${v.hitch}${by ? ` (${by})` : ''}${v.hitch ? ` · by scene ${v.hitchScene.map((c, i) => (c ? `${i + 1}×${c}` : '')).filter(Boolean).join(' ')}` : ''}${v.lastHitch ? ` · last ${v.lastHitch}` : ''}`;
         }
-        v.fpsEl.textContent = `TIER ${s.tier.toUpperCase()}${s.lowRes ? ' low-res' : ''} · scene ${s.sc + 1} · now ${Math.round(fps)} fps\n${line2}\n${v.calls} draws · ${state.size.width}x${state.size.height} @${s.dpr.toFixed(2)} · ${v.gpu}`;
+        v.fpsEl.textContent = `TIER ${s.tier.toUpperCase()}${s.lowRes ? ' low-res' : ''} · scene ${s.sc + 1} · now ${Math.round(fps)} fps\n${line2}${line3}\n${v.calls} draws · ${state.size.width}x${state.size.height} @${s.dpr.toFixed(2)} · ${v.gpu}`;
         v.fpsT = 0; v.fpsN = 0;
       }
-      // Statistics leave out the first 4 seconds after load and 2 seconds after a tier change (decoding, compiling),
+      // Statistics leave out the first 4 seconds after load and 2 seconds after a tier change or the warm-up frame,
       // and start afresh when the tier changes, so each tier is judged by itself.
       const rungNow = s.tier + (s.lowRes ? '-low' : '');
-      if (rungNow !== v.statRung) { v.statRung = rungNow; v.hist.fill(0); v.statN = 0; v.statT = 0; v.hitch = 0; v.lastHitch = ''; for (const k in v.hitchBy) v.hitchBy[k] = 0; if (s.frames > 5) v.tierAt = s.time; }
-      const programs = state.gl.info.programs?.length ?? 0;
+      if (rungNow !== v.statRung) { v.statRung = rungNow; v.hist.fill(0); v.statN = 0; v.statT = 0; v.hitch = 0; v.lastHitch = ''; v.hitchScene.fill(0); for (const k in v.hitchBy) v.hitchBy[k] = 0; if (s.frames > 5) v.tierAt = s.time; }
       if (s.time > 4 && s.time - v.tierAt > 2 && !document.hidden && s.stageOpacity > 0.5 && delta < 2) {
         v.hist[Math.min(400, Math.round(delta * 1000))]++; v.statN++; v.statT += delta;
         if (delta > 0.05) {
-          // What was going on in a stalled frame: a new shader was compiled, a download was landing, the sphere's reflections were redrawn, or none of these
-          const cause = programs !== v.programs ? 'shader compile' : pending.count > 0 ? 'loading' : v.cubeDrawn ? 'reflections' : 'other';
-          v.hitch++; v.hitchBy[cause] = (v.hitchBy[cause] || 0) + 1; v.lastHitch = `${Math.round(delta * 1000)} ms in scene ${s.sc + 1}, ${cause}`;
+          // This frame arrived late because the frame BEFORE it ran long, so the cause is read from that frame's record:
+          // a shader was compiled, a download was landing, an object was drawn for the first time, the canvas changed size,
+          // the sphere's reflections were redrawn, or our own script took most of the time. "Other" is what is left: the
+          // graphics chip finishing work it was handed, the browser's layout and painting, memory clean-up, or another program.
+          const p = v.prev, ms = delta * 1000;
+          const cause = p.compiled ? 'shader compile' : p.loading ? 'loading' : p.upload ? 'first draw' : p.resized ? 'resize' : p.cube ? 'reflections' : p.script > ms * 0.6 ? 'our code' : 'other';
+          v.hitch++; v.hitchBy[cause] = (v.hitchBy[cause] || 0) + 1; v.hitchScene[p.scene - 1]++;
+          v.lastHitch = `${Math.round(ms)} ms in scene ${p.scene}, ${cause} (script ${Math.round(p.script)} ms)`;
         }
       }
-      v.programs = programs;
+      // Record this frame's facts for the next frame to read
+      const programs = state.gl.info.programs?.length ?? 0, uploads = state.gl.info.memory.geometries + state.gl.info.memory.textures, sizeKey = `${W}x${H}@${s.dpr}`;
+      const p = v.prev;
+      p.compiled = programs !== v.programs; p.loading = pending.count > 0; p.upload = uploads > v.uploads; p.resized = sizeKey !== v.sizeKey && v.sizeKey !== '';
+      p.cube = v.cubeDrawn; p.warm = v.warmedThisFrame; p.scene = s.sc + 1; p.script = performance.now() - v.t0;
+      v.programs = programs; v.uploads = uploads; v.sizeKey = sizeKey;
     }
 
     // Device tiers: step down quality before falling back. Full → Light → Light at lower resolution → brief mode.
@@ -531,7 +582,8 @@ export default function Story({ stage, hud, onFail }: Props) {
       if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + el.offsetHeight * (keepT - i) - window.innerHeight / 2, behavior: 'auto' });
     }
     const st = (scroll.current = createScrollTime(tier));
-    const ro = new ResizeObserver(() => st.refresh());
+    let pageH = document.body.offsetHeight;
+    const ro = new ResizeObserver(() => { const h = document.body.offsetHeight; if (h !== pageH) { pageH = h; st.refresh(); } }); // only when the page height really changed
     ro.observe(document.body);
     return () => { ro.disconnect(); st.kill(); scroll.current = null; };
   }, [s, tier]);
@@ -541,6 +593,7 @@ export default function Story({ stage, hud, onFail }: Props) {
       <Canvas
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none', touchAction: 'auto' }}
         dpr={pixelRatio(tier, lowRes)}
+        resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }} // do not re-measure the canvas on every scroll event: it forces a layout pass
         gl={{ antialias: tier === 'full', alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: s.capture }}
         camera={{ fov: 40, near: 0.05, far: 220, position: [0, 1.55, 2.2] }}
         flat
