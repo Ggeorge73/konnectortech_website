@@ -65,12 +65,69 @@ Blender's ray-traced preview of scene 1, for comparison with the browser:
 
 All 36 browser tests and 10 form tests pass.
 
-## Why the gate is not signed off
+## Frame-rate check on real devices
 
-**Frame rate cannot be measured here.** This environment has no graphics card and draws in software, so any number
-from it would be meaningless. The owner will check the preview on real devices: add `?fps=1` to the address and a
-small readout shows the tier, the current frame rate and the lowest seen. A desktop should hold about 60; a phone
-should never drop under 30. Bloom adds an extra half-resolution pass on Full, so that tier is the one to watch.
+**First measurement (owner, 11 Nov 2026, preview with `?fps=1`, lowest figure while scrolling the whole page):**
+
+| Device | Lowest | Gate | Result |
+| --- | --- | --- | --- |
+| Samsung Galaxy phone | 55 | never under 30 on Light | Pass |
+| Laptop | 24 | 60 on Full, never under 30 on Light | **Fail** |
+
+### What I could and could not find out
+
+I cannot reproduce the laptop: this environment has no graphics card. The first readout also did not record which
+tier the laptop was on or which scene the low figure came from. So the cause below is reasoned from the code and
+from draw-call counts measured here, not observed on the laptop. The new readout records all of it for the re-test.
+
+**Two faults in my own measurement and safety net, both now fixed:**
+
+1. **The step-down ladder only measured the first two seconds.** It checked 120 frames after load and then stopped
+   watching. A laptop that was fine in scene 1 and slow in a later scene was never stepped down. This is why 24 was
+   allowed to stand.
+2. **The "lowest" figure included loading.** It counted from the first frame, so a stall while models and textures
+   loaded could set the lowest number. It now ignores the first 4 seconds and the 2 seconds after a tier change.
+
+**What each frame cost, and what was cut (Full tier, in order of likely cost on a laptop):**
+
+| Cost | Before | Now |
+| --- | --- | --- |
+| Pixels drawn | Up to 2× the screen's density with no cap. On a high-density laptop screen that is four times the pixels of 1×, each with anti-aliasing. | Capped at 1.5× and about 2.2 million pixels (roughly 1920 × 1080), whatever the screen. |
+| Film grain overlay | A full-screen blend mode over the canvas: an extra compositing pass every frame. | Plain transparency. Same look, no blend pass. |
+| Bloom | Half resolution (a quarter of the pixels), every frame. | A third of the resolution (a ninth of the pixels). |
+| Sphere reflections | Six small renders of the room every second frame, even when nothing had changed. | Only when the sphere has moved, the sweep has advanced or the lights changed, and at most every fourth frame. |
+| Hidden mechanism parts | The hub, pistons and frame were drawn while scaled to nothing inside the closed sphere. | Not drawn until the sphere opens. |
+| Page layout work | Panel and label sizes were measured every frame in scenes 2 and 3, forcing a layout pass each frame, and several styles were rewritten every frame. | Sizes are read at most twice a second; styles are written only when they change. |
+
+Draw calls per frame, measured here at rest in each scene (typical, then peak when reflections refresh):
+
+| Scene | Full before | Full now | Light before | Light now |
+| --- | --- | --- | --- | --- |
+| 1 Arrival | 151 | 115 (peak 133) | 67 | 49 (peak 67) |
+| 2 The scan | 167 | 131 (peak 163) | 75 | 57 |
+| 3 The line | 162 | 126 (peak 165) | 95 | 59 (peak 132) |
+| 4 The run | 191 | 155 (peak 217) | 92 | 76 (peak 144) |
+| 5 Two doors | 162 | 126 (peak 195) | 70 | 52 (peak 109) |
+| 7 Transformation | 151 | 140 to 151 | 67 | 61 to 64 |
+
+These counts are modest for any graphics chip, which is why I think the laptop was limited by pixels (resolution,
+anti-aliasing, bloom and the blend overlay) rather than by the number of objects. The wider room adds almost nothing:
+it is the same single mesh with a larger floor. The Blender plate clip adds 36 small draws and costs nothing while
+the plates are still.
+
+**The ladder now:** the frame rate is watched for the whole visit in 1.5-second windows. Two slow windows in a row
+step down one rung: Full (target 50, aiming at 60) → Light (30) → Light at lower resolution (20) → brief mode. A
+single long stall (a tab switch or a download) is ignored. A screen that itself refreshes below 60 Hz is allowed for.
+When the tier changes mid-visit, the page stays at the same moment of the story. The step-down test still passes.
+
+**The readout now shows:** the tier in capitals, current frame rate, the lowest figure with the scene and tier it
+happened in, the current scene, draw calls, the resolution being drawn, and the graphics chip. Preview only.
+
+### Why the gate is still not signed off
+
+The fixes are untested on the laptop that failed. The owner will measure again on the same laptop and phone.
+If the laptop is still under target, the readout line will say which tier, which scene and which graphics chip,
+and the next cut can be aimed at that scene.
 
 ## Also open
 

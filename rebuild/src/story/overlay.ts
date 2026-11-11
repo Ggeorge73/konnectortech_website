@@ -22,11 +22,23 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
   const serviceLis = Array.from(document.querySelectorAll<HTMLElement>('[data-scene="3"] [data-at]'));
   const dockU = serviceLis.map((li) => clamp(s.path.uTrack * inOut((parseFloat(li.dataset.at || '0') - 0.1) / 0.8)));
   const sidePanel = document.querySelector<HTMLElement>('[data-scene="3"] .panel');
-  const panelRight = () => (sidePanel ? sidePanel.getBoundingClientRect().right : 0);
+  // Measuring layout every frame forces the browser to recompute it every frame. Sizes are read at most twice a second.
+  const cache = new Map<string, { at: number; v: number }>();
+  const measured = (key: string, read: () => number) => {
+    const hit = cache.get(key);
+    if (hit && s.time - hit.at < 0.5) return hit.v;
+    const v = read();
+    cache.set(key, { at: s.time, v });
+    return v;
+  };
+  const panelRight = () => (sidePanel ? measured('p3', () => sidePanel.getBoundingClientRect().right) : 0);
   const scanPanel = document.querySelector<HTMLElement>('[data-scene="2"] .panel');
-  const scanPanelRight = () => (scanPanel && !s.mobile && s.T < 2.1 ? Math.max(0, scanPanel.getBoundingClientRect().right) : 0);
+  const scanPanelRight = () => (scanPanel && !s.mobile && s.T < 2.1 ? Math.max(0, measured('p2', () => scanPanel.getBoundingClientRect().right)) : 0);
+  // Styles are written only when they change, so hidden labels cost nothing per frame
+  const shown = new WeakMap<HTMLElement, string>();
   const place = (e: HTMLElement, x: number, y: number, opacity: number, extra = '') => {
-    e.style.opacity = opacity.toFixed(3);
+    const o = opacity.toFixed(2);
+    if (shown.get(e) !== o) { e.style.opacity = o; shown.set(e, o); }
     if (opacity > 0.001) e.style.transform = `translate3d(${x.toFixed(1)}px,${y.toFixed(1)}px,0)${extra}`;
   };
 
@@ -54,6 +66,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
 
   const tmp = new THREE.Vector3(), scr = new THREE.Vector2();
   let camera: THREE.Camera | null = null;
+  let lastSo = '', lastFx = '';
   const project = (p: THREE.Vector3) => {
     tmp.copy(p).project(camera!);
     scr.set((tmp.x * 0.5 + 0.5) * s.W, (-tmp.y * 0.5 + 0.5) * s.H);
@@ -64,8 +77,9 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
     setCamera(c: THREE.Camera) { camera = c; },
     update() {
       const { T, p2, q, finale, tau, sweep, time, stageOpacity } = s;
-      stage.style.setProperty('--stage-opacity', stageOpacity.toFixed(3));
-      stage.style.setProperty('--fx', (1 - sweep).toFixed(3)); // film grain and darkened edges belong to the real world only
+      const so = stageOpacity.toFixed(2), fx = (1 - sweep).toFixed(2); // film grain and darkened edges belong to the real world only
+      if (so !== lastSo) { stage.style.setProperty('--stage-opacity', so); lastSo = so; }
+      if (fx !== lastFx) { stage.style.setProperty('--fx', fx); lastFx = fx; }
 
       if (camera) {
         const ringGrow = finale ? smooth((q - 0.74) / 0.16) * s.done : 0;
@@ -85,7 +99,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
         SYSTEM_ANCHORS.forEach((a, i) => {
           tmp.set(a.x < 0 ? a.x * 0.85 : a.x * 1.25, TAG_Y[i], a.z);
           const ok = project(tmp);
-          const w = sysEls[i].offsetWidth || 110, h = 24;
+          const w = measured(`tag${i}`, () => sysEls[i].offsetWidth) || 110, h = 24;
           const x = clamp(scr.x, Math.min(left + w / 2, s.W - w / 2 - 8), s.W - w / 2 - 8);
           let y = clamp(scr.y, 96, s.H - 40);
           for (let n = 0; n < 30 && boxes.some(([x0, y0, x1, y1]) => x - w / 2 < x1 + 8 && x + w / 2 > x0 - 8 && y - h < y1 + 4 && y > y0 - 4); n++) y -= 10;
@@ -114,7 +128,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
           const slot = onCount - 1 - i; // newest panel rides closest to the sphere
           const u = Math.min(s.u - 0.007, Math.max(dockU[i], s.u - (0.009 + 0.0095 * slot)));
           project(s.path.curve.getPointAt(clamp(u)));
-          const px = scr.x, py = scr.y, above = i % 2 === 0, w = 280, h = li.offsetHeight || 80;
+          const px = scr.x, py = scr.y, above = i % 2 === 0, w = 280, h = measured(`li${i}`, () => li.offsetHeight) || 80;
           // Find the nearest free place: first on the panel's own side of the line, then the other side, then further along.
           const minX = panelRight() + 14, maxX = s.W - w - 14, minY = 78, maxY = s.H - h - 12;
           const free = (xx: number, yy: number) => yy >= minY && yy <= maxY && !taken.some(([x0, y0, x1, y1]) => xx < x1 + 10 && xx + w > x0 - 10 && yy < y1 + 10 && yy + h > y0 - 10);
@@ -145,7 +159,8 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
       for (const g of gateLis) { const on = s.gateOn[g.i]; if (on !== g.on) { g.on = on; g.e.classList.toggle('is-on', on); } }
       for (const d of dials) {
         const acc = d.dataset.dial === 'accepted';
-        d.style.setProperty('--fill', (acc ? clamp(s.run / ACCEPTED_AT) : clamp(s.run / 0.86)).toFixed(3));
+        const fill = (acc ? clamp(s.run / ACCEPTED_AT) : clamp(s.run / 0.86)).toFixed(2);
+        if (d.dataset.fill !== fill) { d.dataset.fill = fill; d.style.setProperty('--fill', fill); }
         if (acc) d.classList.toggle('is-accepted', s.run >= ACCEPTED_AT);
       }
     },

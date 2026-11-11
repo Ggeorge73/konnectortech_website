@@ -49,7 +49,8 @@ export function createBloom(renderer: THREE.WebGLRenderer, scene: THREE.Scene, c
     blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true,
   }));
   return {
-    setSize(w: number, h: number) { composer.setSize(Math.max(2, Math.round(w / 2)), Math.max(2, Math.round(h / 2))); },
+    // A third of the screen in each direction (a ninth of the pixels): bloom is a blur, so it does not need more
+    setSize(w: number, h: number) { composer.setSize(Math.max(2, Math.round(w / 3)), Math.max(2, Math.round(h / 3))); },
     /** Call right after the normal frame has been drawn to the screen. */
     render() {
       composer.render();

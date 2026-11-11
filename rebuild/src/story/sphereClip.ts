@@ -24,6 +24,7 @@ export async function loadSphereClip(materials: { plate: THREE.Material; mechani
   action.play();
   action.paused = true;
   let last = -1;
+  const scale = new THREE.Vector3();
   return {
     scene: gltf.scene,
     setProgress(tau) {
@@ -31,6 +32,8 @@ export async function loadSphereClip(materials: { plate: THREE.Material; mechani
       last = tau;
       action.time = Math.min(clip.duration - 1e-4, Math.max(0, tau) * clip.duration);
       mixer.update(0);
+      // Parts that are scaled away (hub, pistons and frame while the sphere is closed) are not drawn at all
+      for (const m of meshes) if (!/^plate_/.test(m.name)) m.visible = m.getWorldScale(scale).x > 0.01;
     },
     dispose() { mixer.stopAllAction(); meshes.forEach((m) => m.geometry.dispose()); },
   };

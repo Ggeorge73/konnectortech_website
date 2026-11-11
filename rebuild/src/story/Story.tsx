@@ -247,7 +247,7 @@ const C_DOORS = new THREE.Vector3(0, 2.3, -74.4), L_DOORS = new THREE.Vector3(0,
 function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director; env: Env; scroll: RefObject<ScrollTime | null>; stage: HTMLElement; hud: HTMLElement; onFail: (r: string) => void; onStepDown: () => void }) {
   const overlay = useMemo(() => createOverlay(s, stage, hud), [s, stage, hud]);
   const sound = useMemo(createSound, []);
-  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0 }), []);
+  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '' }), []);
   useEffect(() => () => { v.bloom?.dispose(); v.bloom = null; }, [v]);
   useEffect(() => {
     // Preview builds only: the readout is never part of a production build
@@ -281,7 +281,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     grab?.addEventListener('pointerdown', onDown);
     gl.domElement.addEventListener('webglcontextlost', onLost);
     // Used by scripts/capture-stills.mjs and the tests to hold the story at a given time
-    (window as unknown as { __ktStory?: unknown }).__ktStory = { setT: (t: number | null) => { s.forcedT = t; }, ready: () => s.live, time: () => s.T };
+    (window as unknown as { __ktStory?: unknown }).__ktStory = { setT: (t: number | null) => { s.forcedT = t; }, ready: () => s.live, time: () => s.T, stats: () => ({ tier: s.tier, lowRes: s.lowRes, dpr: s.dpr, calls: v.calls }) };
     return () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
@@ -364,7 +364,12 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     s.roomU.uScan.value.set(s.sphereScreen.x * s.dpr, (H - s.sphereScreen.y) * s.dpr, Math.hypot(W, H) * 0.92 * s.dpr);
 
     // Reflections: render the room from where the sphere is
-    if (v.cubeTick++ % (s.tier === 'full' ? 2 : 8) === 0 || s.forcedT !== null) {
+    // Six small renders, so it is done only when the reflection would change: the sphere has moved, the sweep has
+    // advanced or the lights have changed. At most every 4th frame on Full and every 12th on Light.
+    const changed = v.cubePos.distanceToSquared(ball.position) > 0.0009 || Math.abs(v.cubeSweep - s.sweep) > 0.01 || v.cubeFinale !== s.finale;
+    const due = v.cubeTick++ % (s.tier === 'full' ? 4 : 12) === 0;
+    if (s.forcedT !== null || v.cubeTick === 1 || (changed && due) || v.cubeTick % 180 === 0) {
+      v.cubePos.copy(ball.position); v.cubeSweep = s.sweep; v.cubeFinale = s.finale;
       ball.visible = false;
       s.roomU.uCube.value = 1;
       s.roomU.uCubeBlend.value = s.sweep;
@@ -376,6 +381,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     // Draw. Not while the tab is hidden, and not during scene 6, where the 3D rests.
     camera.layers.enable(BLOOM_LAYER);
     camera.layers.enable(OVERLAY_LAYER);
+    state.gl.info.autoReset = false;
     if (s.stageOpacity > 0.001 && !document.hidden) {
       state.gl.render(state.scene, camera);
       if (s.tier === 'full' && !s.lowRes) {
@@ -384,6 +390,8 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
         v.bloom.render();
       }
     }
+    v.calls = state.gl.info.render.calls; // draw calls this frame: main view + reflections + bloom
+    state.gl.info.reset();
     if (!s.live) { s.live = true; stage.classList.add('is-live'); document.documentElement.dataset.storyReady = '1'; }
 
     overlay.setCamera(camera);
@@ -392,18 +400,39 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     // ?fps=1 shows a frame-rate readout, so the 60 (Full) and 30 (Light) budgets can be checked on a real device
     if (v.fpsEl) {
       v.fpsT += dt; v.fpsN++;
-      if (v.fpsT >= 0.5) { v.fpsMin = Math.min(v.fpsMin, v.fpsN / v.fpsT); v.fpsEl.textContent = `${s.tier}${document.documentElement.dataset.lowRes ? ' low-res' : ''} · ${Math.round(v.fpsN / v.fpsT)} fps · lowest ${Math.round(v.fpsMin)}`; v.fpsT = 0; v.fpsN = 0; }
+      if (!v.gpu) {
+        try { const c = state.gl.getContext(), x = c.getExtension('WEBGL_debug_renderer_info'); v.gpu = x ? String(c.getParameter(x.UNMASKED_RENDERER_WEBGL)).replace(/^ANGLE \((.*)\)$/, '$1').slice(0, 60) : 'GPU unknown'; } catch { v.gpu = 'GPU unknown'; }
+      }
+      if (v.fpsT >= 0.5) {
+        const fps = v.fpsN / v.fpsT;
+        // The lowest figure ignores the first 4 seconds (loading) and the 2 seconds after a tier change
+        if (s.time > 4 && s.time - v.tierAt > 2 && fps < v.fpsMin) { v.fpsMin = fps; v.fpsMinScene = s.sc + 1; v.fpsMinTier = s.tier + (s.lowRes ? ' low-res' : ''); }
+        const low = v.fpsMin < 900 ? `lowest ${Math.round(v.fpsMin)} in scene ${v.fpsMinScene} on ${v.fpsMinTier}` : 'lowest: measuring';
+        v.fpsEl.textContent = `TIER ${s.tier.toUpperCase()}${s.lowRes ? ' low-res' : ''} · ${Math.round(fps)} fps · ${low} · scene ${s.sc + 1} · ${v.calls} draws · ${state.size.width}x${state.size.height} @${s.dpr.toFixed(2)} · ${v.gpu}`;
+        v.fpsT = 0; v.fpsN = 0;
+      }
     }
 
     // Device tiers: step down quality before falling back. Full → Light → Light at lower resolution → brief mode.
     // (?simulate-slow=1, preview builds only, pretends every frame takes 200 ms so tests can walk the whole ladder.)
-    const span = s.simSlow ? 8 : 120;
-    if ((!s.forced || s.simSlow) && s.forcedT === null && !document.hidden && v.measured < span && s.frames > (s.simSlow ? 2 : 20)) {
-      v.slow += s.simSlow ? 0.2 : dt;
-      if (++v.measured === span) {
-        const avg = v.slow / span;
-        // Too slow for this tier: step down one rung and measure again (the last rung is brief mode)
-        if (avg > (s.tier === 'full' ? 1 / 36 : 1 / 24)) { v.slow = 0; v.measured = 0; onStepDown(); }
+    // The frame rate is watched for the whole visit, in 1.5-second windows, not only at the start: a device can be
+    // fine in scene 1 and struggle in a later scene. Two slow windows in a row step down one rung.
+    // Targets: Full 50 (aiming at 60), Light 30, Light at lower resolution 20 (below that, brief mode).
+    // A screen that itself refreshes slower than 60 Hz is allowed for, using the best rate seen so far.
+    const raw = delta; // unclamped, so a long hitch (tab switch, download) can be told apart from steady slowness
+    if ((!s.forced || s.simSlow) && s.forcedT === null && !document.hidden && s.stageOpacity > 0.5 && s.time > (s.simSlow ? 0 : 4) && s.time - v.tierAt > (s.simSlow ? 0 : 2)) {
+      if (raw > 0.4 && !s.simSlow) { v.winT = 0; v.winN = 0; }
+      else {
+        v.winT += s.simSlow ? 0.2 : raw; v.winN++;
+        if (v.winT >= (s.simSlow ? 1 : 1.5)) {
+          const fps = v.winN / v.winT;
+          v.best = Math.max(v.best, fps);
+          const want = s.tier === 'full' ? 50 : s.lowRes ? 20 : 30;
+          const target = Math.min(want, 0.82 * Math.max(v.best, 30));
+          v.bad = fps < target ? v.bad + 1 : 0;
+          v.winT = 0; v.winN = 0;
+          if (v.bad >= 2) { v.bad = 0; v.tierAt = s.time; onStepDown(); }
+        }
       }
     }
   }, 1);
@@ -415,6 +444,16 @@ class Boundary extends Component<{ onError: () => void; children: ReactNode }, {
   static getDerivedStateFromError() { return { failed: true }; }
   componentDidCatch() { this.props.onError(); }
   render() { return this.state.failed ? null : this.props.children; }
+}
+
+// How sharply the scene is drawn. The limit is on the number of pixels drawn, not only on the ratio, because a large
+// high-density laptop screen at ratio 2 is four times the work of the same scene at ratio 1.
+// Full: up to 1.5x and about 2.2 million pixels. Light: 1x and about 1.3 million. Lower resolution: 0.75 of Light.
+function pixelRatio(tier: Tier, lowRes: boolean) {
+  if (typeof window === 'undefined') return 1;
+  const css = Math.max(1, window.innerWidth * window.innerHeight), device = window.devicePixelRatio || 1;
+  const full = Math.min(device, 1.5, Math.sqrt(2.2e6 / css)), light = Math.min(device, 1, Math.sqrt(1.3e6 / css));
+  return Math.max(0.5, tier === 'full' ? full : lowRes ? light * 0.75 : light);
 }
 
 export default function Story({ stage, hud, onFail }: Props) {
@@ -439,8 +478,13 @@ export default function Story({ stage, hud, onFail }: Props) {
   useEffect(() => () => env.rt.dispose(), [env]);
   // One ScrollTrigger per scene. Rebuilt when the tier changes, because the scene heights change with it.
   useEffect(() => {
+    const keepT = s.frames > 0 ? s.T : -1; // stepping down mid-visit changes scene heights: stay at the same moment of the story
     s.tier = tier;
     document.documentElement.dataset.tier = tier;
+    if (keepT >= 0) {
+      const i = Math.min(6, Math.floor(keepT)), el = document.querySelector<HTMLElement>(`[data-scene="${i + 1}"]`);
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + el.offsetHeight * (keepT - i) - window.innerHeight / 2, behavior: 'auto' });
+    }
     const st = (scroll.current = createScrollTime(tier));
     const ro = new ResizeObserver(() => st.refresh());
     ro.observe(document.body);
@@ -451,7 +495,7 @@ export default function Story({ stage, hud, onFail }: Props) {
     <Boundary onError={() => onFail('no-webgl')}>
       <Canvas
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none', touchAction: 'auto' }}
-        dpr={lowRes ? 0.75 : Math.min(typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1, tier === 'full' ? 2 : 1.25)}
+        dpr={pixelRatio(tier, lowRes)}
         gl={{ antialias: tier === 'full', alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: s.capture }}
         camera={{ fov: 40, near: 0.05, far: 220, position: [0, 1.55, 2.2] }}
         flat
