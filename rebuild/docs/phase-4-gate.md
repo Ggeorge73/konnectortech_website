@@ -30,6 +30,23 @@ The art in this phase follows my recommendations where the owner had not chosen.
 | Light 1.5 MB budget as a CI check, with headroom | Done. CI runs the budget check on every push. Light is now 1.12 MB (was 1.495 MB). |
 | Frame-rate readout on the preview only | Done. `?fps=1` and the slow-frame simulation are compiled out of production builds. |
 
+## Scene 2: gap cards point to their gaps (11 Nov 2026)
+
+The link between the three cards and the three gaps in the room had been lost. It is back, and stronger.
+
+- **Mapping:** Vendor to vendor = Gap 01, Plan to reality = Gap 02, Build to sign-off = Gap 03. Each card now shows its number.
+- **Choosing a card** (click, tap, Enter or Space; hover or keyboard focus previews it): the gap's label grows and fills amber,
+  its ring glows, and the dashed path to it brightens. The other two labels and paths dim. The same card again, or another
+  card, switches it. The cards are buttons that only do this; they never open the form.
+- **Nothing chosen:** all three gaps carry a ring with a soft pulse (still rings with reduced motion), and larger labels.
+- **Brief mode:** the still frame carries three numbered rings; the chosen one grows and glows.
+- **Phones in story mode:** all three cards stay on screen as compact rows, so each can be tapped.
+- **Cost:** no new post-processing pass and no new draw calls. Rings and labels are page elements animated by the
+  compositor. On Full the chosen path joins the existing selective glow; on Light it brightens in its own shader.
+- **A fault of mine found on the way:** on the Light tier (all phones) scene 2's labels were hidden almost as soon as
+  they appeared. The earlier fix that removes them before scene 3 keyed on story time, and Light rests at the very end
+  of each scene while the visitor reads. They now stay until scene 3 begins. Two new tests cover this and the cards.
+
 ## Frames (desktop, Full tier)
 
 | Scene | Frame |

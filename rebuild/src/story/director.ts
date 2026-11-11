@@ -1,5 +1,6 @@
 // The director: turns one number (story time T, 0 to 7, from the scroll) into the state of every part of the scene.
 // Components read this state each frame; nothing else decides what the story shows.
+import { gapFocus } from '@/lib/gapFocus';
 import * as THREE from 'three';
 import { BLOCK_AT, GATE_AT } from './timeline';
 import { buildPath, FORK, GATE_Z, LIGHT_Z, SKY_SYS, SPHERE_REST } from './world';
@@ -46,10 +47,11 @@ export function createDirector(tier: Tier) {
     // Inputs
     pointer: new THREE.Vector2(), pointerEase: new THREE.Vector2(),
     lensOffset: new THREE.Vector2(), lensTarget: new THREE.Vector2(), dragging: false, lastDrag: 0,
-    sector: document.documentElement.dataset.sector || '', hotGap: -1,
+    sector: document.documentElement.dataset.sector || '', gap: -1, // the gap the visitor chose in scene 2's cards, or -1
 
     /** Advance the story by one frame. Ts is the story time read from the scroll. */
     step(now: number, dt: number, scrollT: number) {
+      this.gap = gapFocus.active;
       s.dt = dt;
       s.time = (now - s.t0) / 1000;
       const Ts = s.forcedT ?? scrollT;

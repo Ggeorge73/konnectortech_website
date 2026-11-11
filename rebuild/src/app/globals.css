@@ -144,8 +144,27 @@ html[data-mode='story'] .hud-layer { display: block; position: fixed; inset: 0; 
 .hud-arm { width: 2px; height: 1px; transform-origin: 0 0; background: linear-gradient(90deg, rgba(0, 194, 255, 0.9), rgba(0, 194, 255, 0)); height: 2px; }
 .hud-tag { font: 500 0.66rem var(--font-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--text); background: rgba(7, 12, 24, 0.86); border: 1px solid var(--wire-line); border-radius: 5px; padding: 4px 8px; white-space: nowrap; translate: -50% -140%; }
 .hud-tag.is-lit { border-color: var(--cyan); color: var(--cyan-soft); }
-.hud-tag.is-gap { border-color: var(--amber); color: var(--amber); }
-.hud-tag.is-gap.is-hot { background: var(--amber); color: #1a1000; }
+/* Gap markers (scene 2, story mode): a ring on the gap itself with its label above. All three are always marked; the chosen one grows and glows. */
+.hud-tag.is-gap { border-color: var(--amber); color: var(--amber); font-size: 0.74rem; font-weight: 700; transition: font-size 0.2s ease-out, padding 0.2s ease-out, background-color 0.2s ease-out, color 0.2s ease-out, box-shadow 0.2s ease-out; }
+.hud-tag.is-gap::after, .hud-tag.is-gap::before { content: ''; position: absolute; left: 50%; top: 140%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 2px solid var(--amber); border-radius: 50%; }
+.hud-tag.is-gap::after { background: rgba(255, 176, 32, 0.22); }
+.hud-tag.is-gap::before { opacity: 0; }
+.hud-tag.is-gap.is-hot { background: var(--amber); color: #1a1000; font-size: 1rem; padding: 6px 12px; z-index: 1; box-shadow: 0 0 18px rgba(255, 176, 32, 0.7); }
+.hud-tag.is-gap.is-hot::after { width: 26px; height: 26px; margin: -13px 0 0 -13px; background: var(--amber); box-shadow: 0 0 14px 4px rgba(255, 176, 32, 0.75); }
+/* Brief mode: the same three gaps as numbered rings on the still frame */
+.gap-pin { position: absolute; left: var(--x); top: var(--y); width: 22px; height: 22px; margin: -11px 0 0 -11px; display: grid; place-items: center; font: 700 0.6rem var(--font-mono); color: var(--amber); background: rgba(7, 12, 24, 0.92); border: 2px solid var(--amber); border-radius: 50%; transition: scale 0.2s ease-out, background-color 0.2s ease-out, color 0.2s ease-out, box-shadow 0.2s ease-out, opacity 0.2s; }
+.gap-pin::before { content: ''; position: absolute; inset: -2px; border: 2px solid var(--amber); border-radius: 50%; opacity: 0; }
+.gap-pin[data-pin='0'] { --x: 54.2%; --y: 50.9%; }
+.gap-pin[data-pin='1'] { --x: 59.1%; --y: 47.5%; }
+.gap-pin[data-pin='2'] { --x: 64.9%; --y: 45.8%; }
+[data-gap-active] .gap-pin { opacity: 0.45; }
+[data-gap-active='0'] .gap-pin[data-pin='0'], [data-gap-active='1'] .gap-pin[data-pin='1'], [data-gap-active='2'] .gap-pin[data-pin='2'] { opacity: 1; background: var(--amber); color: #1a1000; scale: 1.6; z-index: 1; box-shadow: 0 0 16px 4px rgba(255, 176, 32, 0.75); }
+@media (prefers-reduced-motion: no-preference) {
+  .hud-tag.is-gap::before, .gap-pin::before { animation: gap-pulse 2.4s ease-out infinite; }
+  .hud-tag.is-gap[data-hud='gap-1']::before, .gap-pin[data-pin='1']::before { animation-delay: 0.8s; }
+  .hud-tag.is-gap[data-hud='gap-2']::before, .gap-pin[data-pin='2']::before { animation-delay: 1.6s; }
+}
+@keyframes gap-pulse { 0% { transform: scale(1); opacity: 0.8; } 70%, 100% { transform: scale(2.6); opacity: 0; } }
 @media (max-width: 760px) { .hud-tag { font-size: 0.56rem; padding: 3px 6px; letter-spacing: 0.1em; } }
 
 /* ── Content layer ── */
@@ -173,9 +192,13 @@ main { position: relative; z-index: 3; }
 
 /* Lists inside scenes */
 .gap-list, .service-list, .gate-list { list-style: none; display: grid; gap: 10px; margin-top: 20px; }
-.gap-list li { border: 1px solid rgba(255, 176, 32, 0.45); border-left: 3px solid var(--amber); background: var(--navy); border-radius: 10px; padding: 12px 16px; transition: transform 0.4s var(--ease), border-color 0.4s; transform-origin: left center; }
+.gap-list li { border: 1px solid rgba(255, 176, 32, 0.45); border-left: 3px solid var(--amber); background: var(--navy); border-radius: 10px; transition: scale 0.3s var(--ease), border-color 0.3s, background-color 0.3s; transform-origin: left center; }
+.gap-list li button { display: block; width: 100%; min-height: 48px; padding: 12px 16px; background: none; border: 0; border-radius: inherit; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .gap-list li b { color: var(--amber); font-family: var(--font-head); display: block; font-size: 1rem; }
-.gap-list li:hover, .gap-list li:focus-visible, .gap-list li.is-hot { transform: scale(1.04); border-color: var(--amber); }
+.gap-list .gap-no { float: right; margin-left: 12px; font: 700 0.66rem var(--font-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--amber); border: 1px solid rgba(255, 176, 32, 0.6); border-radius: 5px; padding: 3px 7px; }
+.gap-list li[data-focus='hot'] { scale: 1.03; border-color: var(--amber); background: #1d1708; }
+.gap-list li[data-focus='hot'] .gap-no { background: var(--amber); color: #1a1000; }
+.gap-list li[data-focus='dim'] { border-color: rgba(255, 176, 32, 0.2); }
 .service-list a { display: block; text-decoration: none; color: var(--text); background: var(--navy); border: 1px solid var(--wire-line); border-left: 3px solid var(--cyan); border-radius: 10px; padding: 12px 16px; transition: border-color 0.3s var(--ease), background-color 0.3s var(--ease); }
 .service-list a:hover { border-color: var(--cyan-soft); background: var(--navy-2); }
 .service-list b { display: flex; justify-content: space-between; gap: 12px; font-family: var(--font-head); font-size: 1rem; }
@@ -319,6 +342,12 @@ html[data-mode='brief'] .gate-list .ring { border-color: var(--cyan); color: var
   html[data-mode='story'] .panel { max-height: 56svh; padding: 16px; }
   html[data-mode='story'] .panel .lede { font-size: 0.95rem; }
   html[data-story-ready] [data-stack] > [data-at]:not(.is-current) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  /* The three gap cards stay on screen as compact rows, so each can be tapped to point at its gap. One sentence shows at a time. */
+  html[data-story-ready] .gap-list[data-stack] > [data-at]:not(.is-current) { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  html[data-mode='story'] .gap-list { gap: 6px; margin-top: 12px; }
+  html[data-mode='story'] .gap-list li button { padding: 9px 12px; min-height: 44px; }
+  html[data-mode='story'] .gap-list .gap-text { display: none; }
+  html[data-mode='story'] .gap-list li[data-focus='hot'] .gap-text, html[data-mode='story'] .gap-list:not(:has([data-focus='hot'])) li.is-current .gap-text { display: block; }
   html[data-mode='story'] [data-scene='1'] .panel { max-height: none; }
   html[data-mode='story'] [data-scene='1'] { --h: auto; }
   html[data-mode='story'] [data-scene='1'] .scene-pin { position: relative; height: auto; padding-top: 46svh; }

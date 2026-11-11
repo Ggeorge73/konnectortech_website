@@ -82,6 +82,42 @@ test.describe('home page', () => {
     for (const id of ['services', 'how', 'sectors', 'about', 'contact']) await expect(page.locator(`#${id}`)).toHaveCount(1);
   });
 
+  test('scene 2: choosing a gap card points to its gap, by mouse and by keyboard, in brief mode', async ({ page }) => {
+    await page.goto('/?mode=brief');
+    const scene = page.locator('[data-scene="2"]');
+    const cards = scene.locator('.gap-list button');
+    await expect(scene.locator('.gap-pin')).toHaveCount(3); // all three gaps are marked before anything is chosen
+    await expect(cards.nth(1)).toContainText('Gap 02');
+    await cards.nth(1).click();
+    await expect(cards.nth(1)).toHaveAttribute('aria-pressed', 'true');
+    await expect(scene).toHaveAttribute('data-gap-active', '1');
+    await cards.nth(2).click(); // another card switches it
+    await expect(scene).toHaveAttribute('data-gap-active', '2');
+    await expect(cards.nth(1)).toHaveAttribute('aria-pressed', 'false');
+    await cards.nth(2).click(); // the same card again turns it off
+    await page.mouse.move(2, 2);
+    await expect(scene).not.toHaveAttribute('data-gap-active', /./);
+    await cards.nth(0).focus();
+    await page.keyboard.press('Enter');
+    await expect(cards.nth(0)).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Space');
+    await expect(cards.nth(0)).toHaveAttribute('aria-pressed', 'false');
+    expect(new URL(page.url()).pathname).toBe('/'); // it never sends the visitor to the form
+    expect(await events(page)).not.toContain('form_started');
+  });
+
+  test('scene 2 in story mode: the chosen gap label lights up in the 3D scene, on the Light tier too', async ({ page }) => {
+    await page.goto('/?mode=story&tier=light');
+    await page.waitForFunction(() => (window as unknown as { __ktStory?: { ready(): boolean } }).__ktStory?.ready(), null, { timeout: 30000 });
+    await page.evaluate(() => { const r = document.querySelector('[data-scene="2"]')!.getBoundingClientRect(); window.scrollTo(0, r.top + scrollY + (r.height - innerHeight) * 0.7); });
+    const tag = page.locator('[data-hud="gap-1"]');
+    await expect(tag).toHaveCSS('opacity', '1', { timeout: 20000 }); // marked with nothing chosen, while the scene rests
+    await page.locator('[data-scene="2"] .gap-list button').nth(1).click();
+    await expect(tag).toHaveClass(/is-hot/);
+    await expect(page.locator('[data-hud="gap-0"]')).not.toHaveClass(/is-hot/);
+    await expect(page.locator('[data-hud="gap-0"]')).toHaveCSS('opacity', '0.45');
+  });
+
   test('choosing a door sets the secondary button and the form sector, and is recorded', async ({ page }) => {
     await page.goto('/?mode=brief');
     const scene5 = page.locator('[data-scene="5"]');

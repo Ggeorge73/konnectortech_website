@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { callHref, gaps, heroHeadline, promises, sectors, site, stages, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
+import { callHref, heroHeadline, promises, sectors, site, stages, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
 import { credentials, getProof, getServices } from '@/lib/content';
-import { ACCEPTED_AT, GAP_AT, GATE_AT, SERVICE_AT } from '@/story/timeline';
+import { ACCEPTED_AT, GATE_AT, SERVICE_AT } from '@/story/timeline';
+import { GapCards } from '@/components/GapCards';
 import { StoryShell } from '@/components/StoryShell';
 import { SectorDoors } from '@/components/SectorDoors';
 import { EnquiryForm } from '@/components/EnquiryForm';
@@ -17,11 +18,12 @@ export const metadata: Metadata = {
 };
 
 // One still per scene: shown in brief mode and reused for share previews.
-function Still({ n, alt, eager }: { n: number; alt: string; eager?: boolean }) {
+function Still({ n, alt, eager, children }: { n: number; alt: string; eager?: boolean; children?: React.ReactNode }) {
   return (
     <figure className="still">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={`/stills/scene-${n}.jpg`} alt={alt} width={1200} height={900} loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : undefined} decoding="async" />
+      {children}
     </figure>
   );
 }
@@ -64,16 +66,13 @@ export default function Home() {
             <div className="panel">
               <p className="hud">Scene 02 · <b>The scan</b></p>
               <h2 id="s2-title">Most projects do not fail in the systems. They fail in the gaps between them.</h2>
-              <ul className="gap-list" data-stack>
-                {gaps.map((g, i) => (
-                  <li key={g.key} data-at={GAP_AT[i]} data-gap={i} tabIndex={0}>
-                    <b>{g.title}</b>{g.text}
-                  </li>
-                ))}
-              </ul>
+              <GapCards />
               <p style={{ margin: '16px 0 0' }}><a className="arrow-link" href="#services" data-cta="see-fix" data-pos="scene-2">See who closes the gaps</a></p>
             </div>
-            <Still n={2} alt="The corridor drawn as a blueprint: five systems in silver outline, joined by dashed amber links with three visible gaps." />
+            <Still n={2} alt="The corridor drawn as a blueprint: five systems in silver outline, joined by dashed amber links with three visible gaps.">
+              {/* Brief mode: the three gaps marked on the still. The cards beside it highlight one. */}
+              {[0, 1, 2].map((i) => <span key={i} className="gap-pin" data-pin={i} aria-hidden="true">0{i + 1}</span>)}
+            </Still>
           </div>
         </div>
       </section>

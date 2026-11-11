@@ -122,8 +122,9 @@ void main() {
 
 export const LINK_VERT = /* glsl */ `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
 export const LINK_FRAG = /* glsl */ `
-uniform vec3 uColor; uniform float uDashes; uniform float uOpacity; uniform float uCut; varying vec2 vUv;
-void main() { if (vUv.x < uCut || fract(vUv.x * uDashes) > 0.55) discard; gl_FragColor = vec4(uColor, uOpacity); }`;
+uniform vec3 uColor; uniform float uDashes; uniform float uOpacity; uniform float uCut; uniform float uHot; varying vec2 vUv;
+// uHot: this link leads to the gap the visitor chose, so its dashes brighten toward a pale amber
+void main() { if (vUv.x < uCut || fract(vUv.x * uDashes) > 0.55) discard; gl_FragColor = vec4(mix(uColor, vec3(1.0, 0.9, 0.62), uHot * 0.6), uOpacity); }`;
 
 export const GRID_FRAG = /* glsl */ `
 uniform float uOpacity; uniform vec3 uWire; varying vec3 vW; varying float vDepth;

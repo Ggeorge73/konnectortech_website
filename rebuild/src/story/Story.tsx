@@ -74,14 +74,15 @@ function Lines({ s }: { s: Director }) {
   const built = useMemo(() => {
     const { curve, uAnchors } = s.path;
     const hasGap = [true, true, false, true]; // three of the four links stop short with a visible gap
-    const links: { geometry: THREE.TubeGeometry; material: THREE.ShaderMaterial; u0: number; u1: number; mesh: THREE.Mesh | null }[] = [];
+    const gapOf = [0, 1, -1, 2]; // which gap (Gap 01, 02, 03) each of the four links leads to
+    const links: { geometry: THREE.TubeGeometry; material: THREE.ShaderMaterial; u0: number; u1: number; gap: number; hot: boolean; mesh: THREE.Mesh | null }[] = [];
     for (let i = 0; i < 4; i++) {
       const a = uAnchors[i], b = uAnchors[i + 1];
       for (const [u0, u1] of hasGap[i] ? [[a, mix(a, b, 0.36)], [mix(a, b, 0.64), b]] : [[a, b]]) {
         links.push({
-          u0, u1, mesh: null,
+          u0, u1, mesh: null, gap: gapOf[i], hot: false,
           geometry: new THREE.TubeGeometry(subCurve(curve, u0, u1), 48, 0.014, 5),
-          material: new THREE.ShaderMaterial({ vertexShader: LINK_VERT, fragmentShader: LINK_FRAG, transparent: true, uniforms: { uColor: { value: AMBER }, uDashes: { value: Math.max(3, Math.round((u1 - u0) * 260)) }, uOpacity: { value: 0 }, uCut: { value: 0 } } }),
+          material: new THREE.ShaderMaterial({ vertexShader: LINK_VERT, fragmentShader: LINK_FRAG, transparent: true, uniforms: { uColor: { value: AMBER }, uDashes: { value: Math.max(3, Math.round((u1 - u0) * 260)) }, uOpacity: { value: 0 }, uCut: { value: 0 }, uHot: { value: 0 } } }),
         });
       }
     }
@@ -103,7 +104,11 @@ function Lines({ s }: { s: Director }) {
     }
     for (const l of built.links) {
       if (l.mesh) l.mesh.visible = s.linkOpacity > 0.001 && s.u < l.u1;
-      l.material.uniforms.uOpacity.value = s.linkOpacity;
+      // Scene 2: the dashed path to the chosen gap brightens (and takes the existing bloom on Full); the others dim
+      const chosen = s.T < 2 ? s.gap : -1, hot = chosen >= 0 && l.gap === chosen;
+      l.material.uniforms.uOpacity.value = s.linkOpacity * (chosen >= 0 && !hot ? 0.28 : 1);
+      l.material.uniforms.uHot.value = hot ? 1 : 0;
+      if (l.mesh && l.hot !== hot) { l.hot = hot; if (hot) l.mesh.layers.enable(BLOOM_LAYER); else l.mesh.layers.disable(BLOOM_LAYER); }
       l.material.uniforms.uCut.value = clamp((s.u - l.u0) / (l.u1 - l.u0));
     }
     built.branches.forEach((g, i) => {

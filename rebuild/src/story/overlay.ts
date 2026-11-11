@@ -16,6 +16,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
   const gapU = [0, 1, 3].map((i) => mix(s.path.uAnchors[i], s.path.uAnchors[i + 1], 0.5));
   const gapPoints = gapU.map((u) => s.path.curve.getPointAt(u));
   const gapEls = gapPoints.map((_, i) => el(`gap-${i}`));
+  const gapHot = gapEls.map(() => false);
   const gateEls = GATE_Z.map((_, i) => el(`gate-${i}`));
   // Scene 3: each service panel docks onto the line. A leader runs from the panel to the point on the line it joined.
   const dockEls = [0, 1, 2, 3].map((i) => el(`dock-${i}`));
@@ -57,12 +58,6 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
     for (const st of list) st.e.classList.toggle('is-current', st.e === (lastOn ?? list[0]?.e));
   };
 
-  // Hover, focus or tap a gap in the text to enlarge its label in the scene
-  const gapLis = Array.from(document.querySelectorAll<HTMLElement>('[data-gap]'));
-  const gapOn = (e: Event) => { s.hotGap = Number((e.currentTarget as HTMLElement).dataset.gap); };
-  const gapOff = () => { s.hotGap = -1; };
-  const gapEvents: [string, (e: Event) => void][] = [['pointerenter', gapOn], ['pointerleave', gapOff], ['focus', gapOn], ['blur', gapOff], ['click', gapOn]];
-  gapLis.forEach((li) => gapEvents.forEach(([name, fn]) => li.addEventListener(name, fn)));
 
   const tmp = new THREE.Vector3(), scr = new THREE.Vector2();
   let camera: THREE.Camera | null = null;
@@ -90,7 +85,9 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
         place(armEl, s.sphereScreen.x, s.sphereScreen.y, sweep > 0.002 && sweep < 0.998 ? 0.9 : 0, ` rotate(${armA.toFixed(4)}rad) scaleX(${(Math.hypot(s.W, s.H) * 0.46).toFixed(1)})`);
 
         // Scene 2's labels (systems and gaps) belong to scene 2 only: they are gone by the time scene 3 starts, on every tier
-        const scene2Out = 1 - smooth((T - 1.9) / 0.08);
+        // On the Light tier a scene plays to its end and rests there (T = 1.999) while the visitor reads, so its labels
+        // must stay until scene 3 really begins. On Full the scroll drives T, and they fade over the last tenth of the scene.
+        const scene2Out = s.tier === 'full' ? 1 - smooth((T - 1.9) / 0.08) : 1 - smooth((T - 1.9992) / 0.01);
         const tagsOn = finale ? 0 : smooth((p2 - 0.46) / 0.05) * scene2Out;
         // The five system labels never overlap: each is nudged up until it is clear of the ones already placed,
         // and kept inside the frame and clear of the text panel.
@@ -109,8 +106,10 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
         });
         gapPoints.forEach((g, i) => {
           const ok = project(g);
-          place(gapEls[i], scr.x, scr.y, ok && !finale ? smooth((p2 - 0.48) / 0.05) * scene2Out : 0);
-          gapEls[i].classList.toggle('is-hot', s.hotGap === i);
+          // The chosen gap's label grows and fills; the other two fade back. (The cards in the page text set s.gap.)
+          const hot = s.gap === i, dim = s.gap >= 0 && !hot;
+          place(gapEls[i], scr.x, scr.y, ok && !finale ? smooth((p2 - 0.48) / 0.05) * scene2Out * (dim ? 0.45 : 1) : 0);
+          if (gapHot[i] !== hot) { gapHot[i] = hot; gapEls[i].classList.toggle('is-hot', hot); }
         });
         // Scene 3 (desktop): each service panel docks onto the line itself and rides it behind the sphere.
         // A panel joins at the point the sphere had reached, then keeps its place in the queue as the sphere moves on.
@@ -165,7 +164,6 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
       }
     },
     dispose() {
-      gapLis.forEach((li) => gapEvents.forEach(([name, fn]) => li.removeEventListener(name, fn)));
       Array.from(hud.children).forEach((c) => ((c as HTMLElement).style.opacity = '0'));
       serviceLis.forEach((li) => { li.classList.remove('is-docked'); li.style.transform = ''; });
     },
