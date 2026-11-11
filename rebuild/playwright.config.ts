@@ -18,7 +18,9 @@ export default defineConfig({
     { name: 'chromium' },
     ...(process.env.PW_ALL_BROWSERS
       ? [
-          { name: 'firefox', use: { browserName: 'firefox' as const, launchOptions: {} }, testMatch: /cross-browser\.spec\.ts/ },
+          // Headless Firefox turns 3D off when it finds no graphics chip. These settings ask it to use software drawing instead,
+          // so the story itself is exercised in Firefox. If it still has no 3D, the test checks the fall back to brief mode.
+          { name: 'firefox', use: { browserName: 'firefox' as const, launchOptions: { firefoxUserPrefs: { 'webgl.force-enabled': true, 'webgl.disabled': false, 'gfx.webrender.software': true } } }, testMatch: /cross-browser\.spec\.ts/ },
           { name: 'webkit', use: { browserName: 'webkit' as const, launchOptions: {} }, testMatch: /cross-browser\.spec\.ts/ },
         ]
       : []),

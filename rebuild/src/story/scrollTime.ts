@@ -28,7 +28,10 @@ export function createScrollTime(tier: Tier) {
     });
   });
   return {
-    getT: () => scenes.reduce((sum, _, i) => sum + progress[`p${i}`], 0),
+    getT: () => { let sum = 0; for (let i = 0; i < scenes.length; i++) sum += progress[`p${i}`]; return sum; },
+    // Read the scroll position now. ScrollTrigger normally waits for the browser's scroll event; if one is dropped or
+    // lands while it is re-measuring, the story would sit a step behind until the next scroll. Checked once a frame.
+    sync: () => ScrollTrigger.update(),
     refresh: () => ScrollTrigger.refresh(),
     kill: () => ctx.revert(),
   };

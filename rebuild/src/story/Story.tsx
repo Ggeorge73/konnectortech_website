@@ -259,7 +259,7 @@ const C_DOORS = new THREE.Vector3(0, 2.3, -74.4), L_DOORS = new THREE.Vector3(0,
 function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director; env: Env; scroll: RefObject<ScrollTime | null>; stage: HTMLElement; hud: HTMLElement; onFail: (r: string) => void; onStepDown: () => void }) {
   const overlay = useMemo(() => createOverlay(s, stage, hud), [s, stage, hud]);
   const sound = useMemo(createSound, []);
-  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '', warmed: false, cubeDrawn: false, programs: 0, hist: new Uint32Array(401), statN: 0, statT: 0, statRung: '', hitch: 0, lastHitch: '', hitchBy: {} as Record<string, number>,
+  const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, cubeFace: -1, cubeAt: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '', warmed: false, cubeDrawn: false, programs: 0, hist: new Uint32Array(401), statN: 0, statT: 0, statRung: '', hitch: 0, lastHitch: '', hitchBy: {} as Record<string, number>,
     quiet: 0, warmCount: -1, warmedThisFrame: false, t0: 0, hitchScene: [0, 0, 0, 0, 0, 0, 0], uploads: 0, sizeKey: '', prev: { compiled: false, loading: false, upload: false, resized: false, cube: false, warm: false, script: 0, scene: 1 } }), []);
   useEffect(() => () => { v.bloom?.dispose(); v.bloom = null; }, [v]);
   useEffect(() => {
@@ -294,7 +294,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     grab?.addEventListener('pointerdown', onDown);
     gl.domElement.addEventListener('webglcontextlost', onLost);
     // Used by scripts/capture-stills.mjs and the tests to hold the story at a given time
-    (window as unknown as { __ktStory?: unknown }).__ktStory = { setT: (t: number | null) => { s.forcedT = t; }, ready: () => s.live, time: () => s.T, stats: () => ({ tier: s.tier, lowRes: s.lowRes, dpr: s.dpr, calls: v.calls }) };
+    (window as unknown as { __ktStory?: unknown }).__ktStory = { setT: (t: number | null) => { s.forcedT = t; }, ready: () => s.live, time: () => s.T, stats: () => ({ tier: s.tier, lowRes: s.lowRes, dpr: s.dpr, calls: v.calls, T: s.T, line: s.u, branches: s.branchP, arrive: s.arriveP, mark: s.tau, stage: s.stageOpacity, sphere: [s.sphereScreen.x, s.sphereScreen.y], size: [s.W, s.H] }) };
     return () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
@@ -314,6 +314,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
   useFrame((_, delta) => {
     const dt = Math.min(0.1, delta);
     v.t0 = performance.now(); // start of this frame's own work, for the readout
+    scroll.current?.sync();
     s.step(v.t0, dt, scroll.current?.getT() ?? 0);
     let locked = 0;
     for (const on of s.gateOn) if (on) locked++;
@@ -365,9 +366,8 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     // Mask inputs in screen pixels: the lens, and the centre of the radar sweep
     const ball = s.ball;
     if (!ball) return;
-    const project = (p: THREE.Vector3, out: THREE.Vector2) => { v.a.copy(p).project(camera); out.set((v.a.x * 0.5 + 0.5) * W, (-v.a.y * 0.5 + 0.5) * H); };
-    project(ball.position, s.sphereScreen);
-    project(v.look.copy(ball.position).setY(ball.position.y + R), v.top);
+    v.a.copy(ball.position).project(camera); s.sphereScreen.set((v.a.x * 0.5 + 0.5) * W, (-v.a.y * 0.5 + 0.5) * H);
+    v.a.copy(ball.position).setY(ball.position.y + R).project(camera); v.top.set((v.a.x * 0.5 + 0.5) * W, (-v.a.y * 0.5 + 0.5) * H);
     const rPx = Math.max(8, Math.abs(s.sphereScreen.y - v.top.y));
     if (!s.dragging && (performance.now() - s.lastDrag > 1600 || T > 0.95)) s.lensTarget.multiplyScalar(Math.exp(-dt * 4));
     s.lensOffset.lerp(s.lensTarget, 1 - Math.exp(-dt * 12));
@@ -429,22 +429,43 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
       }
     }
 
-    // Reflections: render the room from where the sphere is
-    // Six small renders, so it is done only when the reflection would change: the sphere has moved, the sweep has
-    // advanced or the lights have changed. At most every 4th frame on Full and every 12th on Light.
+    // Reflections: the room as seen from where the sphere is, drawn into the six faces of a small cube.
+    // Drawing all six in one frame made that frame six room-draws heavier than its neighbours, which is enough to miss
+    // a screen refresh on a phone. So a refresh is spread out: one face a frame over six frames. The picture in the
+    // chrome changes slowly, so a face that is a few frames old cannot be seen. A refresh starts only when the reflection
+    // would change (the sphere has moved, the sweep has advanced, the lights have changed), on Light at most every 12th
+    // frame, and once in a long while regardless. Captures and the first frame still draw all six at once.
     const changed = v.cubePos.distanceToSquared(ball.position) > 0.0009 || Math.abs(v.cubeSweep - s.sweep) > 0.01 || v.cubeFinale !== s.finale;
-    const due = v.cubeTick++ % (s.tier === 'full' ? 4 : 12) === 0;
+    v.cubeTick++;
     v.cubeDrawn = false;
-    if (s.forcedT !== null || v.cubeTick === 1 || (changed && due) || v.cubeTick % 180 === 0) {
-      v.cubeDrawn = true;
-      v.cubePos.copy(ball.position); v.cubeSweep = s.sweep; v.cubeFinale = s.finale;
+    const drawFace = (face: number) => {
+      const rt = env.rt, gl = state.gl;
       ball.visible = false;
       s.roomU.uCube.value = 1;
       s.roomU.uCubeBlend.value = s.sweep;
-      env.cam.position.copy(ball.position);
-      env.cam.update(state.gl, state.scene);
+      if (face < 0) env.cam.update(gl, state.scene);
+      else {
+        rt.texture.generateMipmaps = face === 5; // the smaller copies are rebuilt once, after the last face
+        gl.setRenderTarget(rt, face);
+        gl.render(state.scene, env.cam.children[face] as THREE.Camera);
+        gl.setRenderTarget(null);
+        rt.texture.generateMipmaps = true;
+      }
       s.roomU.uCube.value = 0;
       ball.visible = true;
+      v.cubeDrawn = true;
+    };
+    if (s.forcedT !== null || v.cubeTick === 1) {
+      v.cubePos.copy(ball.position); v.cubeSweep = s.sweep; v.cubeFinale = s.finale; v.cubeFace = -1; v.cubeAt = v.cubeTick;
+      env.cam.position.copy(ball.position);
+      drawFace(-1);
+    } else {
+      if (v.cubeFace < 0 && ((changed && v.cubeTick - v.cubeAt >= (s.tier === 'full' ? 6 : 12)) || v.cubeTick - v.cubeAt >= 600)) {
+        v.cubePos.copy(ball.position); v.cubeSweep = s.sweep; v.cubeFinale = s.finale; v.cubeFace = 0; v.cubeAt = v.cubeTick;
+        env.cam.position.copy(ball.position);
+        env.cam.updateMatrixWorld();
+      }
+      if (v.cubeFace >= 0 && s.stageOpacity > 0.001 && !document.hidden) { drawFace(v.cubeFace); v.cubeFace = v.cubeFace === 5 ? -1 : v.cubeFace + 1; }
     }
     // Draw. Not while the tab is hidden, and not during scene 6, where the 3D rests.
     state.gl.info.autoReset = false;
