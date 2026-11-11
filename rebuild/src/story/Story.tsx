@@ -348,13 +348,13 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     overlay.setCamera(camera);
     overlay.update();
 
-    // Device tiers: step down before falling back. Full → Light → brief mode.
+    // Device tiers: step down quality before falling back. Full → Light → Light at lower resolution → brief mode.
     if (!s.forced && s.forcedT === null && !document.hidden && v.measured < 120 && s.frames > 20) {
       v.slow += dt;
       if (++v.measured === 120) {
         const avg = v.slow / 120;
-        if (s.tier === 'full' && avg > 1 / 36) { v.slow = 0; v.measured = 0; onStepDown(); }
-        else if (s.tier === 'light' && avg > 1 / 22) onFail('slow');
+        // Too slow for this tier: step down one rung and measure again (the last rung is brief mode)
+        if (avg > (s.tier === 'full' ? 1 / 36 : 1 / 24)) { v.slow = 0; v.measured = 0; onStepDown(); }
       }
     }
   }, 1);
@@ -370,6 +370,14 @@ class Boundary extends Component<{ onError: () => void; children: ReactNode }, {
 
 export default function Story({ stage, hud, onFail }: Props) {
   const [tier, setTier] = useState<Tier>(() => (document.documentElement.dataset.tier === 'full' ? 'full' : 'light'));
+  const [lowRes, setLowRes] = useState(false);
+  const rung = useRef({ tier, lowRes });
+  rung.current = { tier, lowRes };
+  const stepDown = () => {
+    if (rung.current.tier === 'full') setTier('light');
+    else if (!rung.current.lowRes) { setLowRes(true); document.documentElement.dataset.lowRes = '1'; }
+    else onFail('slow');
+  };
   const s = useMemo(() => createDirector(tier), []); // eslint-disable-line react-hooks/exhaustive-deps
   const env = useMemo<Env>(() => {
     const rt = new THREE.WebGLCubeRenderTarget(tier === 'full' ? 128 : 64, { generateMipmaps: true, minFilter: THREE.LinearMipmapLinearFilter });
@@ -394,7 +402,7 @@ export default function Story({ stage, hud, onFail }: Props) {
     <Boundary onError={() => onFail('no-webgl')}>
       <Canvas
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none', touchAction: 'auto' }}
-        dpr={Math.min(typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1, tier === 'full' ? 2 : 1.25)}
+        dpr={lowRes ? 0.75 : Math.min(typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1, tier === 'full' ? 2 : 1.25)}
         gl={{ antialias: tier === 'full', alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: s.capture }}
         camera={{ fov: 40, near: 0.05, far: 220, position: [0, 1.55, 2.2] }}
         flat
@@ -407,7 +415,7 @@ export default function Story({ stage, hud, onFail }: Props) {
         <Gates s={s} />
         <Sphere s={s} env={env} />
         <primitive object={env.cam} />
-        {els ? <Loop s={s} env={env} scroll={scroll} stage={els.stage} hud={els.hud} onFail={onFail} onStepDown={() => setTier('light')} /> : null}
+        {els ? <Loop s={s} env={env} scroll={scroll} stage={els.stage} hud={els.hud} onFail={onFail} onStepDown={stepDown} /> : null}
       </Canvas>
     </Boundary>
   );

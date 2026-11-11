@@ -1,6 +1,6 @@
 # Gate 1: storyboard and final copy
 
-**Status (11 Nov 2026): copy signed off. Frames held.** Decisions A (Blender) and B (React Three Fiber + GSAP
+**Status (11 Nov 2026): copy and composition signed off with changes.** The changes and their status are listed in `docs/phase-2-gate.md`, section 7. Decisions A (Blender) and B (React Three Fiber + GSAP
 ScrollTrigger) are approved and done. The camera stays inside the room in scenes 2 and 3.
 
 The frames below are the second set, re-shot on the new stack after a scene-by-scene review against the script.

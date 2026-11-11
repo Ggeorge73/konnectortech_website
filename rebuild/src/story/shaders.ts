@@ -47,7 +47,7 @@ float storyMask() {
 
 export const ROOM_FRAG = /* glsl */ `
 uniform vec3 uLights[5]; uniform float uLightI[5]; uniform float uStatus; uniform float uLit[8];
-uniform vec3 uCyan; uniform vec3 uWire; uniform vec3 uNight;
+uniform vec3 uCyan; uniform vec3 uWire; uniform vec3 uNight; uniform float uSky;
 varying vec2 vUv; varying vec3 vN; varying vec3 vW; varying float vShade; varying float vSys; varying float vGlow; varying float vDepth;
 ${MASK_GLSL}
 void main() {
@@ -85,7 +85,7 @@ void main() {
     // The corridor's shell is see-through in the blueprint: X-ray glasses, so the camera can look in from outside
     if (vGlow < -0.5 && mask > 0.999 && line < 0.03) discard;
     float fade = 1.0 - 0.72 * smoothstep(14.0, 60.0, vDepth);
-    if (sys >= 6) fade = 0.85;
+    if (sys >= 6) { if (uSky < 0.01) discard; fade = 0.85 * uSky; } // the skyline belongs to scene 5 and is not drawn before it
     bp = uNight * 0.7 + mix(uWire, uCyan, lit) * line * fade * (0.55 + 0.6 * lit);
     if (vGlow > 0.5 && vGlow < 1.5) bp += uCyan * lit * 0.9;
   }

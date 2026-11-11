@@ -3,7 +3,7 @@ order: 1
 core: true
 title: Project and program delivery
 short: Project and program delivery
-summary: Delivery leadership for the initiatives that matter most, taking work from plan to working result.
+summary: Delivery leadership for the initiatives that matter most — project and program management, Agile and SAFe delivery, and PMO support that takes work from plan to working result.
 description: Program management, Agile and SAFe delivery, PMO support, and risk and governance from one accountable partner. On time, on budget, to agreed acceptance criteria.
 covers:
   - Program management

@@ -13,12 +13,18 @@ const problems = [];
 
 if (production) {
   const dir = path.join(root, 'content/proof');
-  const records = fs.readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => matter(fs.readFileSync(path.join(dir, f), 'utf8')).data).filter((d) => !d.draft);
+  const all = fs.readdirSync(dir).filter((f) => f.endsWith('.md')).map((f) => ({ file: f, ...matter(fs.readFileSync(path.join(dir, f), 'utf8')).data }));
+  const records = all.filter((d) => !d.draft);
+  // Any draft item at all stops a production build: nothing invented or unfinished can go live.
+  for (const d of all.filter((x) => x.draft)) problems.push(`Draft item: content/proof/${d.file} is still marked draft. Replace it with a real record or delete it.`);
   if (records.length < 2) problems.push(`Proof: ${records.length} published delivery record(s). At least two are needed before launch (content/proof/*.md, remove "draft: true" once real).`);
   if (!records.some((r) => r.sector === 'public') || !records.some((r) => r.sector === 'private')) problems.push('Proof: at least one public and one private delivery record are needed.');
   const company = JSON.parse(fs.readFileSync(path.join(root, 'content/company.json'), 'utf8'));
+  for (const [group, items] of Object.entries(company)) if (Array.isArray(items)) for (const it of items.filter((x) => x.draft)) problems.push(`Draft item: content/company.json → ${group} → "${it.label || it.name}" is still marked draft. Confirm it or delete it.`);
   if (!company.credentials.some((c) => !c.draft)) problems.push('Credentials strip: no confirmed certifications, registrations or partner badges (content/company.json).');
-  if (!process.env.NEXT_PUBLIC_CAPABILITY_STATEMENT_URL) problems.push('Capability statement: set NEXT_PUBLIC_CAPABILITY_STATEMENT_URL to the PDF (for example /konnector-capability-statement.pdf in /public).');
+  const pdf = process.env.NEXT_PUBLIC_CAPABILITY_STATEMENT_URL;
+  if (!pdf) problems.push('Capability statement: set NEXT_PUBLIC_CAPABILITY_STATEMENT_URL to the PDF (for example /konnector-capability-statement.pdf in /public).');
+  else if (pdf.startsWith('/') && !fs.existsSync(path.join(root, 'public', pdf))) problems.push(`Capability statement: ${pdf} is set but the file is not in /public.`);
   if (!process.env.NEXT_PUBLIC_BOOKING_URL) problems.push('Booking link: set NEXT_PUBLIC_BOOKING_URL to the calendar booking page for the 30-minute call.');
   if (!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) problems.push('Bot check: set NEXT_PUBLIC_TURNSTILE_SITE_KEY (and TURNSTILE_SECRET_KEY on the server).');
 }

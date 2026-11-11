@@ -67,7 +67,7 @@ export function StoryShell() {
     window.addEventListener('kt:mode', onMode);
     const ro = new ResizeObserver(onResize);
     ro.observe(document.body);
-    if (getMode() === 'brief') track('brief_mode_opened', { reason: 'auto' });
+    if (getMode() === 'brief') track('brief_mode_opened', { reason: d.dataset.briefWhy || 'auto' });
     // Load the 3D code after first paint so the headline and buttons are never blocked by it.
     const idle = window.setTimeout(start, 120);
 

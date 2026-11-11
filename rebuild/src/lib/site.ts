@@ -43,6 +43,8 @@ export const callHref = site.bookingUrl ?? '/contact/?ask=call';
 // No button pretends to be something it is not: without a booking link the ask is "Request a call" and opens the form.
 export const callLabel = site.bookingUrl ? site.cta.call : 'Request a call';
 export const statementHref = site.capabilityStatementUrl ?? '/contact/?ask=statement';
+// With the PDF set, the button is a real download. Until then it is a request that opens the form.
+export const statementAttrs = site.capabilityStatementUrl ? { download: true } : {};
 export const statementLabel = site.capabilityStatementUrl ? site.cta.statement : 'Request capability statement';
 
 export const scenes = [

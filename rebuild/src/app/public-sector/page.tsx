@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { contractRoutes, naicsCodes, registrations } from '@/lib/content';
-import { sectors, site, statementHref, statementLabel } from '@/lib/site';
+import { sectors, site, statementHref, statementLabel, statementAttrs } from '@/lib/site';
 import { CtaBand, PageHead } from '@/components/Page';
 import { DraftNote } from '@/components/Proof';
 import Link from 'next/link';
@@ -18,7 +18,7 @@ export default function PublicSector() {
       <PageHead label="Public sector" title="One accountable partner for public sector delivery." lede={sectors.public.text}>
         <div className="ctas">
           <Link className="btn btn-primary" href="/contact/?sector=public" data-cta="plan" data-pos="public-head">{site.cta.main}</Link>
-          <a className="btn btn-ghost" href={statementHref} data-cta="statement" data-pos="public-head">{statementLabel}</a>
+          <a className="btn btn-ghost" href={statementHref} {...statementAttrs} data-cta="statement" data-pos="public-head">{statementLabel}</a>
         </div>
       </PageHead>
       <section className="section">

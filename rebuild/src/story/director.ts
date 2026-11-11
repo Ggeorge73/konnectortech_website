@@ -26,7 +26,7 @@ export function createDirector(tier: Tier) {
     roomU: {
       uLights: { value: LIGHT_Z.map((z) => new THREE.Vector3(0, 2.8, z)) }, uLightI: { value: lightI }, uStatus: { value: 0 }, uLit: { value: lit },
       uLens: { value: new THREE.Vector3() }, uScan: { value: new THREE.Vector3(0, 0, 1) }, uSweep: { value: 0 }, uArm0: { value: Math.PI * 0.5 },
-      uCube: { value: 0 }, uCubeBlend: { value: 0 }, uCyan: { value: CYAN }, uWire: { value: WIRE }, uNight: { value: NIGHT },
+      uCube: { value: 0 }, uCubeBlend: { value: 0 }, uSky: { value: 0 }, uCyan: { value: CYAN }, uWire: { value: WIRE }, uNight: { value: NIGHT },
     },
     lit,
     // Per-frame story state
@@ -71,6 +71,7 @@ export function createDirector(tier: Tier) {
       // Worlds: the sweep converts the room to blueprint in scene 2 and restores it, now lit, in scene 7
       const sweep = (s.sweep = T < 1 ? 0 : T < 2 ? smooth((p2 - 0.02) / 0.32) : !finale ? 1 : 1 - smooth(q / 0.16));
       s.roomU.uSweep.value = sweep;
+      s.roomU.uSky.value = finale ? 0 : smooth((T - 3.9) / 0.2);
       const x = s.time * 2.3, i0 = Math.floor(x);
       const h = (n: number) => { const v = Math.sin(n * 91.7) * 43758.5; return v - Math.floor(v); };
       const flick = mix(h(i0), h(i0 + 1), smooth(x - i0)); // gentle flicker, well under 3 flashes a second

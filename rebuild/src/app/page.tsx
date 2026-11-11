@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { callHref, gaps, heroHeadline, promises, sectors, site, stages, statementHref, statementLabel, callLabel } from '@/lib/site';
+import { callHref, gaps, heroHeadline, promises, sectors, site, stages, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
 import { credentials, getProof, getServices } from '@/lib/content';
 import { ACCEPTED_AT, GAP_AT, GATE_AT, SERVICE_AT } from '@/story/timeline';
 import { StoryShell } from '@/components/StoryShell';
@@ -143,7 +143,7 @@ export default function Home() {
               <SectorDoors />
               <div className="ctas">
                 <a className="btn btn-primary" href="#contact" data-cta="plan" data-pos="scene-5">{site.cta.main}</a>
-                <a className="btn btn-ghost" href={statementHref} data-for="public" data-cta="statement" data-pos="scene-5">{statementLabel}</a>
+                <a className="btn btn-ghost" href={statementHref} {...statementAttrs} data-for="public" data-cta="statement" data-pos="scene-5">{statementLabel}</a>
                 <a className="btn btn-ghost" href={callHref} data-for="private" data-cta="call" data-pos="scene-5">{callLabel}</a>
               </div>
               <p className="muted" style={{ margin: '14px 0 0', fontSize: '0.92rem' }}>
