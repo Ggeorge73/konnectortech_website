@@ -422,3 +422,17 @@ html[data-mode='story'] .rail a.is-current + .rail-gates ~ *, html[data-mode='st
   html[data-story-ready] [data-scene='3'] .service-list b { font-size: 0.86rem; }
   html[data-story-ready] [data-scene='3'] .service-list span { font-size: 0.76rem; line-height: 1.35; }
 }
+
+/* Phones, scene 5: a short card so the skyline, the sphere and the split line stay in view above it */
+@media (max-width: 860px) {
+  html[data-mode='story'] [data-scene='5'] .panel { max-height: 50svh; padding: 12px 14px; }
+  html[data-mode='story'] [data-scene='5'] .panel h2 { font-size: 1.15rem; margin-bottom: 0.3em; }
+  html[data-mode='story'] [data-scene='5'] .hud { margin-bottom: 8px; }
+  html[data-mode='story'] [data-scene='5'] .doors { grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  html[data-mode='story'] [data-scene='5'] .door { padding: 8px 10px; }
+  html[data-mode='story'] [data-scene='5'] .door b { font-size: 0.92rem; }
+  html[data-mode='story'] [data-scene='5'] .door span { font-size: 0.74rem; line-height: 1.35; }
+  html[data-mode='story'] [data-scene='5'] .ctas { flex-wrap: nowrap; }
+  html[data-mode='story'] [data-scene='5'] .ctas .btn { min-height: 40px; padding: 8px 10px; font-size: 0.8rem; flex: 1 1 0; text-align: center; }
+  html[data-mode='story'] [data-scene='5'] .panel > p.muted { margin-top: 8px !important; font-size: 0.8rem !important; display: flex; gap: 14px; flex-wrap: wrap; }
+}

@@ -1,7 +1,21 @@
 # Phase 3 gate: grey-box story
 
 **Gate:** the story reads clearly on a desktop and a phone.
-**My assessment:** desktop yes. Phone mostly, with scene 5 still open. The art is first-pass and not locked.
+**Result: signed off on 11 Nov 2026**, at the owner's request ("if it fits the script and overall plan, go ahead with the sign-off"),
+after the one failing item was fixed. The art is first-pass and not locked.
+
+**Review against the script's Phase 3:** "Build the scroll timeline, camera path, sweep, lens and line using simple
+grey shapes in place of final art. Gate: the story reads clearly on a desktop and a phone."
+
+| Script item | Fits? |
+| --- | --- |
+| Scroll timeline: one scroll value, native scrolling, sticky sections, wheel never taken over | Yes |
+| Camera path through all seven scenes, inside the room in scenes 2 and 3 | Yes |
+| Sweep, driven by the scroll, forward in scene 2 and in reverse in scene 7 | Yes |
+| Lens on the sphere, draggable on desktop | Yes (drag not exercised by a test) |
+| The line, drawn in step with the scroll, never broken | Yes |
+| Reads clearly on a desktop | Yes |
+| Reads clearly on a phone | Yes after the scene 5 fix below. Two limits remain and are listed, not hidden. |
 
 Frames were captured from the running build: desktop at 1600 × 900 on the Full tier, phone at 390 × 800 on the Light tier.
 All 35 browser tests, 10 form tests and the budgets pass.
@@ -36,9 +50,10 @@ All 35 browser tests, 10 form tests and the budgets pass.
 
 | Scene | Reads clearly? |
 | --- | --- |
-| 1, 3, 4, 6, 7 | Yes |
+| 1, 4, 6, 7 | Yes |
 | 2 The scan | Mostly. The five labels crowd in a corridor this narrow. |
-| 5 Two doors | **No.** The text card is tall and covers the skyline and the sphere. It needs a shorter card or a taller scene. |
+| 5 Two doors | Yes, after a fix: the card is now short enough that the skyline, the sphere and the split line show above it. |
+| 3 The line | Yes, with a limit: on a phone the service panels show one at a time in the text card, not on the line. |
 
 ## Not verified
 
