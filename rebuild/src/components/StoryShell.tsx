@@ -1,9 +1,13 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { scenes, site, systems } from '@/lib/site';
 import { createScrollTimeline, SCENE_COUNT } from '@/story/scroll';
 import { getMode, setMode, track } from '@/lib/track';
 import { ScannerRing } from './Mark';
+
+// The 3D story (React Three Fiber + GSAP ScrollTrigger) is a separate download, fetched only when it is going to play.
+const Story = dynamic(() => import('@/story/Story'), { ssr: false });
 
 // Home page only. Holds the three fixed pieces around the content layer:
 //   the scene layer (one fixed 3D canvas, decoration, hidden from screen readers),
@@ -11,11 +15,14 @@ import { ScannerRing } from './Mark';
 //   and the progress rail + phone action bar.
 // The 3D code is loaded after first paint, and only in story mode.
 export function StoryShell() {
-  const canvas = useRef<HTMLCanvasElement>(null);
+  const [playing, setPlaying] = useState(false);
   const stage = useRef<HTMLDivElement>(null);
   const hud = useRef<HTMLDivElement>(null);
   const rail = useRef<HTMLElement>(null);
   const bar = useRef<HTMLDivElement>(null);
+
+  // 3D unavailable or too slow on this device: fall back to brief mode without losing the visitor's place.
+  const onFail = useRef((reason: string) => { track('brief_mode_opened', { reason }); setMode('brief', false); }).current;
 
   useEffect(() => {
     const d = document.documentElement;
@@ -24,35 +31,12 @@ export function StoryShell() {
     document.body.classList.add('has-action-bar');
 
     const tl = createScrollTimeline();
-    let engine: { dispose: () => void } | null = null;
     let cancelled = false;
     let reached = 0;
     let raf = 0;
 
-    const start = () => {
-      if (engine || cancelled || getMode() !== 'story') return;
-      import('@/story/engine')
-        .then(({ startStory }) => {
-          if (cancelled || getMode() !== 'story' || engine || !canvas.current || !stage.current || !hud.current) return;
-          engine = startStory({
-            canvas: canvas.current,
-            stage: stage.current,
-            hud: hud.current,
-            timeline: tl,
-            onFail: (reason) => {
-              // 3D unavailable or too slow on this device: fall back to brief mode without losing the visitor's place.
-              track('brief_mode_opened', { reason });
-              setMode('brief', false);
-            },
-          });
-        })
-        .catch(() => setMode('brief', false));
-    };
-    const stop = () => {
-      engine?.dispose();
-      engine = null;
-      delete d.dataset.storyReady;
-    };
+    const start = () => { if (!cancelled && getMode() === 'story') setPlaying(true); };
+    const stop = () => { setPlaying(false); delete d.dataset.storyReady; };
 
     const update = () => {
       raf = 0;
@@ -108,7 +92,7 @@ export function StoryShell() {
         {/* A still of the same frame shows first; the live scene fades in over it. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="stage-poster" src="/stills/poster.jpg" alt="" width={1600} height={900} decoding="async" />
-        <canvas ref={canvas} />
+        {playing ? <Story stage={stage} hud={hud} onFail={onFail} /> : null}
         <div className="stage-fx" />
       </div>
       <div className="hud-layer" ref={hud} aria-hidden="true">

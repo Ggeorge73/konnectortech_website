@@ -13,7 +13,7 @@ moves until you say so.
 | --- | --- | --- |
 | Home page, seven scenes | `src/app/page.tsx` | One markup, two modes: **story** (3D, pinned, scroll-played) and **brief** (stills, normal scrolling). |
 | Brief mode | same page, `html[data-mode="brief"]` | The default without scripts, with reduced motion, data saver, no 3D or software graphics. Built first. |
-| 3D story | `src/story/` | `engine.ts` (one scroll value drives camera, sweep, line, HUD), `world.ts` (corridor, track, skyline), `sphere.ts` (36 plates → the mark), `sound.ts`. Loaded after first paint. |
+| 3D story | `src/story/` | React Three Fiber + GSAP ScrollTrigger. `Story.tsx` (canvas and scene components), `director.ts` (story time → state of every part), `scrollTime.ts` (one ScrollTrigger per scene), `overlay.ts` (HUD and text reveals), `world.ts` (corridor, track, skyline), `sphere.ts` (36 plates → the mark), `sound.ts`. Loaded after first paint. |
 | Supporting pages | `src/app/*` | Services (index + 4), How we deliver, Public sector, Private sector, Proof (index + records), About, Contact, Privacy notice. |
 | Content | `content/` | Markdown for services and delivery records, `company.json` for credentials, registrations and people. |
 | Names, links, copy | `src/lib/site.ts` | Headlines, buttons, reply promise, booking link, capability statement link. |
@@ -82,7 +82,6 @@ Nothing here is invented. Each missing item shows as a stamped **DRAFT** in prev
 ## Where this build differs from the script, and why
 
 - **Hosting:** Next.js is exported as static files so it runs on the current Cloudflare Pages setup; the form's server side is a Pages Function (the pattern the live site already uses) instead of a Next.js server route.
-- **3D:** plain three.js, without React Three Fiber, and native sticky scrolling with one scroll value, without GSAP. This keeps the first load at about 168 KB compressed (budget 200 KB) and the 3D code at about 137 KB.
 - **3D art:** the corridor, sphere, mark and skyline are built in code, not modelled in Blender. Download size for 3D assets is zero. A 3D artist can later replace `world.ts` and `sphere.ts` with glTF models without touching the timeline.
 - **Screen effects:** film grain and darkened edges are CSS overlays; cyan glow is three sprites on the mark's nodes. There is no bloom pass.
 - **Lead store:** Cloudflare KV (already in use) instead of a database table. Konnector CRM's API needs fields a web enquiry cannot supply, so the CRM push is a signed webhook waiting for an inbound-lead endpoint on the CRM side.

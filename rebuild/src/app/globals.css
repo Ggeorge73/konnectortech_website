@@ -283,17 +283,17 @@ html[data-mode='story'] .still { display: none; }
 html[data-mode='story'] .panel { pointer-events: auto; width: min(520px, 100%); background: var(--panel); border: 1px solid var(--wire-line); border-radius: var(--radius); padding: clamp(18px, 2.4vw, 30px); max-height: calc(100svh - var(--header-h) - 40px); overflow: auto; }
 html[data-mode='story'] .panel h2 { font-size: clamp(1.35rem, 2.3vw, 1.95rem); }
 html[data-mode='story'] .panel h1 { font-size: clamp(1.9rem, 3.6vw, 3.1rem); }
+/* About eleven screen heights in all: 100 + 150 + 200 + 250 + 100 + (proof, normal flow) + 150 */
 html[data-mode='story'] [data-scene='1'] { --h: 100svh; }
-html[data-mode='story'] [data-scene='2'] { --h: 210svh; }
-html[data-mode='story'] [data-scene='3'] { --h: 270svh; }
-html[data-mode='story'] [data-scene='4'] { --h: 330svh; }
-html[data-mode='story'] [data-scene='5'] { --h: 160svh; }
-html[data-mode='story'] [data-scene='7'] { --h: 260svh; }
-html[data-mode='story'][data-tier='light'] [data-scene='2'] { --h: 150svh; }
-html[data-mode='story'][data-tier='light'] [data-scene='3'] { --h: 190svh; }
-html[data-mode='story'][data-tier='light'] [data-scene='4'] { --h: 230svh; }
-html[data-mode='story'][data-tier='light'] [data-scene='5'] { --h: 130svh; }
-html[data-mode='story'][data-tier='light'] [data-scene='7'] { --h: 170svh; }
+html[data-mode='story'] [data-scene='2'] { --h: 150svh; }
+html[data-mode='story'] [data-scene='3'] { --h: 200svh; }
+html[data-mode='story'] [data-scene='4'] { --h: 250svh; }
+html[data-mode='story'] [data-scene='5'] { --h: 100svh; }
+html[data-mode='story'] [data-scene='7'] { --h: 150svh; }
+html[data-mode='story'][data-tier='light'] [data-scene='2'] { --h: 130svh; }
+html[data-mode='story'][data-tier='light'] [data-scene='3'] { --h: 160svh; }
+html[data-mode='story'][data-tier='light'] [data-scene='4'] { --h: 190svh; }
+html[data-mode='story'][data-tier='light'] [data-scene='7'] { --h: 140svh; }
 html[data-mode='story'] .scene--proof { background-color: transparent; }
 html[data-mode='story'] .scene--finale .scene-pin { align-items: flex-start; }
 html[data-mode='story'] .scene--finale .panel { width: min(640px, 100%); margin-inline: auto; text-align: center; }
