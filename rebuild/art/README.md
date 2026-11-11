@@ -37,7 +37,7 @@ The number after `out` is the bake's sample count: 8 for a quick check (about 90
 | File | Contents |
 | --- | --- |
 | `room.glb` | Corridor mesh, Meshopt. Vertex attributes `_sys` (0 = unnamed, 1 to 5 = the five systems) and `_glow` (1 = status light, 2 = strip light). |
-| `room_dim.{full,light}.ktx2` | Baked lighting for scene 1 (2048 and 1024 px). |
+| `room_dim.{full,light}.ktx2` | Baked lighting for scene 1 (2048 px for Full, 768 px for Light). |
 | `room_lit.{full,light}.ktx2` | Baked lighting for scene 7: steady lights, cyan status lights. |
 | `room_lines.glb` | Blueprint line set: every feature edge of the same model, with `_sys`. |
 | `sphere.glb` | Nodes `plate_00` to `plate_35` (each with a `piece` morph target), `hub`, `piston_0..2`; animation `Transform`. |
