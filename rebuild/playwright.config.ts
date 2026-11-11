@@ -12,5 +12,16 @@ export default defineConfig({
     baseURL: `http://localhost:${PORT}`,
     launchOptions: { executablePath: process.env.PW_CHROMIUM_PATH || undefined, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] },
   },
+  // Chromium runs everything. In CI (PW_ALL_BROWSERS=1) Firefox and WebKit, the engine behind Safari, also run the
+  // cross-browser spec. They are not installed in every development environment, so they are opt-in.
+  projects: [
+    { name: 'chromium' },
+    ...(process.env.PW_ALL_BROWSERS
+      ? [
+          { name: 'firefox', use: { browserName: 'firefox' as const, launchOptions: {} }, testMatch: /cross-browser\.spec\.ts/ },
+          { name: 'webkit', use: { browserName: 'webkit' as const, launchOptions: {} }, testMatch: /cross-browser\.spec\.ts/ },
+        ]
+      : []),
+  ],
   webServer: { command: `node scripts/serve.mjs ${PORT}`, port: PORT, reuseExistingServer: false },
 });

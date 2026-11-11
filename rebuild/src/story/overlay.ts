@@ -75,7 +75,9 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
         const armA = -(s.roomU.uArm0.value + ((sweep * 3) % 1) * Math.PI * 2);
         place(armEl, s.sphereScreen.x, s.sphereScreen.y, sweep > 0.002 && sweep < 0.998 ? 0.9 : 0, ` rotate(${armA.toFixed(4)}rad) scaleX(${(Math.hypot(s.W, s.H) * 0.46).toFixed(1)})`);
 
-        const tagsOn = finale ? 0 : smooth((p2 - 0.46) / 0.05) * (1 - smooth((T - 3.02) / 0.15));
+        // Scene 2's labels (systems and gaps) belong to scene 2 only: they are gone by the time scene 3 starts, on every tier
+        const scene2Out = 1 - smooth((T - 1.9) / 0.08);
+        const tagsOn = finale ? 0 : smooth((p2 - 0.46) / 0.05) * scene2Out;
         // The five system labels never overlap: each is nudged up until it is clear of the ones already placed,
         // and kept inside the frame and clear of the text panel.
         const boxes: [number, number, number, number][] = [];
@@ -93,8 +95,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
         });
         gapPoints.forEach((g, i) => {
           const ok = project(g);
-          const open = s.u < gapU[i] && T < 3 && !finale ? 1 : 0;
-          place(gapEls[i], scr.x, scr.y, ok ? smooth((p2 - 0.48) / 0.05) * open : 0);
+          place(gapEls[i], scr.x, scr.y, ok && !finale ? smooth((p2 - 0.48) / 0.05) * scene2Out : 0);
           gapEls[i].classList.toggle('is-hot', s.hotGap === i);
         });
         // Scene 3 (desktop): each service panel docks onto the line itself and rides it behind the sphere.
