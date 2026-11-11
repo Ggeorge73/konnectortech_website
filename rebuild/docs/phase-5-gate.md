@@ -103,6 +103,16 @@ covers, so this is worth half an hour of a person's time before launch.
 3. One older phone: confirm it opens in Light or brief mode and scrolls without catching.
 4. The phone reading for the 1% low.
 
+## Recording of all seven scenes
+
+`phase-5/story.mp4` (24 seconds, 1280 x 720) is the whole story with the final art, Full tier, from arrival to the
+mark. `phase-5/story-frames.jpg` is eight frames from it side by side.
+
+![Eight frames from the recording](phase-5/story-frames.jpg)
+
+It is drawn frame by frame on a machine with no graphics chip and then joined up, so it shows what each moment
+looks like, not how smoothly the page runs. Smoothness is what the `?fps=1` readings on real devices are for.
+
 ## Redirects
 
 The live site is one page, so there are no old page addresses to redirect. Its section links are kept: `#services`,
