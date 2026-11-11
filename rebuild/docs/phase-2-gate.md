@@ -65,7 +65,7 @@ Not tested end to end: a real email leaving through Resend, and the Cloudflare b
 
 `npm run build:production` now fails on **any** draft item, on fewer than two real records, on a missing public or
 private record, on a missing capability statement (or a path that is not in `/public`), on a missing booking link and
-on a missing bot-check key. Today it fails with 17 reasons, which is correct: no proof, credentials or codes have been supplied, and none were invented.
+on a missing bot-check key. Today it fails with 18 reasons, which is correct: no proof, credentials or codes have been supplied, and none were invented.
 
 ## 6. Analytics event list
 
