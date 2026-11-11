@@ -99,7 +99,7 @@ from draw-call counts measured here, not observed on the laptop. The new readout
 | Hidden mechanism parts | The hub, pistons and frame were drawn while scaled to nothing inside the closed sphere. | Not drawn until the sphere opens. |
 | Page layout work | Panel and label sizes were measured every frame in scenes 2 and 3, forcing a layout pass each frame, and several styles were rewritten every frame. | Sizes are read at most twice a second; styles are written only when they change. |
 
-Draw calls per frame, measured here at rest in each scene (typical, then peak when reflections refresh):
+Draw calls per frame, measured here at rest in each scene (typical, then peak when reflections refresh). The "before" columns were taken part-way through the cuts, after reflections were throttled. In the build the owner measured, reflections refreshed every second frame, so half of all frames ran at about the peak figure:
 
 | Scene | Full before | Full now | Light before | Light now |
 | --- | --- | --- | --- | --- |
