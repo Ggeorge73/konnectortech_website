@@ -76,7 +76,7 @@ Nothing here is invented. Each missing item shows as a stamped **DRAFT** in prev
 - **Proof:** at least two delivery records, one public and one private (`content/proof/*.md`).
 - **Credentials, registrations, NAICS codes, contract routes, people:** `content/company.json`.
 - **Capability statement PDF** and the **calendar booking link**.
-- **Frontier technology cards** (`content/frontier.json`): Koniku, QVITI and RSQ HOLO. Konnector is shown as the integrator, not the inventor. Each card stays a draft until its wording has been checked against the company's site and the company has agreed to be named. Text names only: no logos and no "partner" wording until then.
+- **Frontier technology cards** (`content/frontier.json`): Koniku, QVITI and RSQ HOLO. Konnector is shown as the integrator, not the inventor. Wording checked and cleared by Gbenga on 12 Nov 2026. Text names only: no logos and no "partner" wording.
 - **Reply promise:** the site says "one business day" (the script's recommendation). Confirm or change it in `src/lib/site.ts` and `functions/api/contact.js`.
 - **Sign-off on the copy**, including the service pages, "How we deliver" and the privacy notice.
 

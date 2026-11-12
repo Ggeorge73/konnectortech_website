@@ -136,7 +136,10 @@ test.describe('home page', () => {
       await expect(card.locator('.frontier-fit li').nth(1)).toContainText(pri);
       await expect(card.locator('.frontier-steps li')).toHaveCount(5);
     }
-    // Text names only until each company agrees: no logos, and never called partners
+    // Cleared for publication: no draft stamps left, and the identification-only line stays
+    await expect(section.locator('.stamp.draft, .draft-note')).toHaveCount(0);
+    await expect(section).toContainText('Company names are used for identification only.');
+    // Text names only: no logos, and never called partners
     await expect(section.locator('img, svg')).toHaveCount(0);
     expect((await section.innerText()).toLowerCase()).not.toContain('partner');
     await expect(section).toContainText('We do not invent these devices');

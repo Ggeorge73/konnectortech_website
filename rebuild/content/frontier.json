@@ -1,5 +1,5 @@
 {
-  "note": "Frontier technologies Konnector helps customers integrate. Konnector is the integrator, not the inventor. All three serve both public and private sector customers. Each 'what' line is the company's own description, attributed to it. Keep 'draft': true until (1) the wording has been checked against the company's site and (2) the company has agreed to be named. No logos and no 'partner' wording until then.",
+  "note": "Frontier technologies Konnector helps customers integrate. Konnector is the integrator, not the inventor. All three serve both public and private sector customers. Each 'what' line is the company's own description, attributed to it. Wording checked against the companies' sites and cleared by Gbenga on 12 Nov 2026. Text names only: no logos and no 'partner' wording. To hold a card back from production again, add \"draft\": true to it.",
   "items": [
     {
       "key": "koniku",
@@ -30,8 +30,7 @@
           "Go-live",
           "tested against the acceptance criteria you set"
         ]
-      ],
-      "draft": true
+      ]
     },
     {
       "key": "qviti",
@@ -62,8 +61,7 @@
           "Go-live",
           "tested against the acceptance criteria you set"
         ]
-      ],
-      "draft": true
+      ]
     },
     {
       "key": "rsq-holo",
@@ -94,8 +92,7 @@
           "Go-live",
           "tested against the acceptance criteria you set"
         ]
-      ],
-      "draft": true
+      ]
     }
   ]
 }

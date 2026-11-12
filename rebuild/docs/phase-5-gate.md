@@ -140,14 +140,13 @@ private sector page with that side's fit, linking back to the full card.
   First-load size went from 171.7 KB to 174.5 KB (limit 200 KB). 3D sizes are unchanged.
 - Each "what it is" line is the company's own description, attributed to it. Konnector makes no claim for the
   products. The word "partner" is not used for them.
-- All three cards are drafts. They are stamped in the preview, and a production build refuses to build until each
-  one's wording has been checked against the company's site and the company has agreed to be named.
+- The three descriptions were checked against the companies' sites and cleared by Gbenga on 12 Nov 2026, with text
+  names only. The draft stamps are removed; the cards are part of a production build.
 - Tests cover the three cards, the text-only rule, the order on the page, the sector-page links, and an
   accessibility scan of the section in story mode.
 
 ## What the owner still holds
 
-- Frontier technology: confirm each company agrees to be named, and check the three descriptions.
 - Content for launch: at least two delivery records, credentials and registrations, the capability statement PDF,
   the booking link, and a read of the privacy notice and the reply promise.
 - The four device checks above.

@@ -2,7 +2,7 @@ import type { FrontierItem } from '@/lib/content';
 
 // Frontier technology cards. Konnector is the integrator, not the inventor: the "what it is" line is the maker's own
 // description, the rest is what Konnector does to make the device work inside the customer's environment.
-// Text names only: no logos and no "partner" wording until each company has agreed to be named.
+// Text names only: no logos and no "partner" wording.
 // Every technology serves both public and private sector customers. The home page lists both sides; a sector page
 // (compact, with `side`) shows the line for its own side and links back to the full card on the home page.
 export function FrontierCard({ item, pos, compact = false, side }: { item: FrontierItem; pos: string; compact?: boolean; side?: 'public' | 'private' }) {
