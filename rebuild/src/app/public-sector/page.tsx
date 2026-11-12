@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { contractRoutes, naicsCodes, registrations } from '@/lib/content';
+import { contractRoutes, frontier, naicsCodes, registrations } from '@/lib/content';
+import { FRONTIER_DISCLAIMER, FrontierCard } from '@/components/Frontier';
 import { sectors, site, statementHref, statementLabel, statementAttrs } from '@/lib/site';
 import { CtaBand, PageHead } from '@/components/Page';
 import { DraftNote } from '@/components/Proof';
@@ -43,6 +44,16 @@ export default function PublicSector() {
               </tbody>
             </table>
             <DraftNote show={facts.some((f) => f.draft)}>Preview only: registrations, codes and contract routes are awaiting confirmed values from Konnector. Draft rows are left out of the production build, so only what is current is ever listed.</DraftNote>
+          </div>
+        </section>
+      ) : null}
+      {frontier.some((f) => f.sector === 'public') ? (
+        <section className="section" aria-labelledby="frontier-title">
+          <div className="wrap">
+            <h2 id="frontier-title">Frontier technology, landed</h2>
+            <p className="lede">New detection technology only helps once it works inside your environment. We integrate it; we do not invent it.</p>
+            <div className="frontier-grid">{frontier.filter((f) => f.sector === 'public').map((f) => <FrontierCard key={f.key} item={f} pos="public-sector" compact />)}</div>
+            <p className="frontier-note">{FRONTIER_DISCLAIMER}</p>
           </div>
         </section>
       ) : null}

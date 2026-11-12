@@ -4,6 +4,7 @@ import path from 'node:path';
 import matter from 'gray-matter';
 import { marked } from 'marked';
 import company from '../../content/company.json';
+import frontierData from '../../content/frontier.json';
 import { IS_PRODUCTION } from './site';
 
 const ROOT = path.join(process.cwd(), 'content');
@@ -65,3 +66,7 @@ export const registrations = live(company.registrations as Fact[]);
 export const naicsCodes = live(company.naicsCodes as Fact[]);
 export const contractRoutes = live(company.contractRoutes as Fact[]);
 export const people = live(company.people as Person[]);
+
+// Frontier technologies Konnector helps customers integrate (content/frontier.json). Konnector is the integrator.
+export type FrontierItem = { key: string; company: string; product: string; url: string; what: string; fit: string; sector: 'public' | 'private'; sectorLabel: string; steps: [string, string][]; draft?: boolean };
+export const frontier = live(frontierData.items as FrontierItem[]);

@@ -21,6 +21,8 @@ if (production) {
   if (!records.some((r) => r.sector === 'public') || !records.some((r) => r.sector === 'private')) problems.push('Proof: at least one public and one private delivery record are needed.');
   const company = JSON.parse(fs.readFileSync(path.join(root, 'content/company.json'), 'utf8'));
   for (const [group, items] of Object.entries(company)) if (Array.isArray(items)) for (const it of items.filter((x) => x.draft)) problems.push(`Draft item: content/company.json → ${group} → "${it.label || it.name}" is still marked draft. Confirm it or delete it.`);
+  const frontier = JSON.parse(fs.readFileSync(path.join(root, 'content/frontier.json'), 'utf8'));
+  for (const it of frontier.items.filter((x) => x.draft)) problems.push(`Draft item: content/frontier.json → "${it.company}" is still marked draft. Check the wording against the company's site, confirm it agrees to be named, then remove "draft": true (or delete the entry).`);
   if (!company.credentials.some((c) => !c.draft)) problems.push('Credentials strip: no confirmed certifications, registrations or partner badges (content/company.json).');
   const pdf = process.env.NEXT_PUBLIC_CAPABILITY_STATEMENT_URL;
   if (!pdf) problems.push('Capability statement: set NEXT_PUBLIC_CAPABILITY_STATEMENT_URL to the PDF (for example /konnector-capability-statement.pdf in /public).');

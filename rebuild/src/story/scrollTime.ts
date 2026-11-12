@@ -11,6 +11,9 @@ export function createScrollTime(tier: Tier) {
   const scenes = Array.from(document.querySelectorAll<HTMLElement>('[data-scene]')).sort((a, b) => Number(a.dataset.scene) - Number(b.dataset.scene));
   const ctx = gsap.context(() => {
     scenes.forEach((el, i) => {
+      // An ordinary section can lead a scene (the frontier section leads scene 6): the scene's time then starts at the
+      // top of that section, so the story does not hold still, with the 3D still drawing, while it scrolls past.
+      const lead = document.querySelector<HTMLElement>(`[data-scene-lead="${el.dataset.scene}"]`) ?? el;
       progress[`p${i}`] = 0;
       gsap.to(progress, {
         [`p${i}`]: 1,
@@ -19,7 +22,7 @@ export function createScrollTime(tier: Tier) {
           trigger: el,
           // A scene runs while it crosses the viewport's midline. Positions are measured from the element itself,
           // so they stay right whatever the page's scroll position or scroll-behavior is at refresh time.
-          start: () => Math.max(0, el.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2),
+          start: () => Math.max(0, lead.getBoundingClientRect().top + window.scrollY - window.innerHeight / 2),
           end: () => el.getBoundingClientRect().bottom + window.scrollY - window.innerHeight / 2,
           scrub: tier === 'full' ? 0.35 : true, // Full: short smoothing for a heavy, mechanical feel. Light: direct.
           invalidateOnRefresh: true,

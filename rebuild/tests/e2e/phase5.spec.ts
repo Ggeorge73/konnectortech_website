@@ -3,7 +3,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-type Stats = { T: number; line: number; branches: number; arrive: number; mark: number; stage: number; sphere: [number, number]; size: [number, number] };
+type Stats = { frames: number; T: number; line: number; branches: number; arrive: number; mark: number; stage: number; sphere: [number, number]; size: [number, number] };
 type Story = { ready(): boolean; time(): number; setT(t: number | null): void; stats(): Stats };
 const story = (page: Page) => page.waitForFunction(() => (window as unknown as { __ktStory?: Story }).__ktStory?.ready(), null, { timeout: 30_000 });
 const stats = (page: Page) => page.evaluate(() => (window as unknown as { __ktStory: Story }).__ktStory.stats());
@@ -28,13 +28,18 @@ test.describe('acceptance: the story', () => {
     const total = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
     const settle = async (y: number) => {
       await page.evaluate((top) => window.scrollTo(0, top), y);
-      let last = -1, still = 0;
-      for (let i = 0; i < 60; i++) { // wait until the story time has stopped moving (the Full tier eases after the scroll)
-        await page.waitForTimeout(200);
-        const T = await page.evaluate(() => (window as unknown as { __ktStory: Story }).__ktStory.time());
-        still = Math.abs(T - last) < 0.001 ? still + 1 : 0;
-        last = T;
-        if (still >= 3) return T;
+      // Wait until the story time has stopped moving (the Full tier eases after the scroll). Only readings taken after
+      // new frames have been drawn count: on a machine with no graphics chip a single frame can take most of a second,
+      // and the story time is only worked out when a frame is drawn.
+      let last = -1, still = 0, frame = -1;
+      for (let i = 0; i < 120; i++) {
+        await page.waitForTimeout(120);
+        const st = await stats(page);
+        if (st.frames < frame + 2) continue;
+        frame = st.frames;
+        still = Math.abs(st.T - last) < 0.001 ? still + 1 : 0;
+        last = st.T;
+        if (still >= 2) return st.T;
       }
       return last;
     };
@@ -151,6 +156,13 @@ test.describe('accessibility pass (WCAG 2.2 AA, axe)', () => {
     await scene(5, 0.6);
     await page.getByRole('button', { name: /^Public sector/ }).click();
     expect(await serious(page), 'scene 5 with a door chosen').toEqual([]);
+    await page.locator('#frontier').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(1200);
+    expect(await serious(page), 'frontier technology section').toEqual([]);
+    // While it is on screen the 3D rests: the story time has moved into scene 6 and the canvas has faded out
+    const resting = await stats(page);
+    expect(resting.T).toBeGreaterThan(5);
+    expect(resting.stage).toBeLessThan(0.5);
     await page.locator('#contact').scrollIntoViewIfNeeded();
     await page.getByRole('button', { name: 'Send and get my plan' }).click(); // show the error messages
     await page.waitForTimeout(600);
@@ -202,14 +214,18 @@ test('interaction delay stays under 200 ms on a throttled phone (brief mode: doo
     w.__slow = [];
     new PerformanceObserver((l) => { for (const e of l.getEntries()) w.__slow.push({ name: e.name, ms: e.duration }); }).observe({ type: 'event', durationThreshold: 16, buffered: true } as PerformanceObserverInit);
   });
-  await page.locator('[data-scene="2"] .gap-list button').first().tap();
-  await page.getByRole('button', { name: /^Public sector/ }).tap();
-  await page.getByLabel('Your name').tap();
+  // Bring each control on screen first and let the page settle, so what is timed is the response to the tap itself,
+  // not the browser drawing a part of the page it has just been scrolled to.
+  const tap = async (target: ReturnType<Page['locator']>) => { await target.scrollIntoViewIfNeeded(); await page.waitForTimeout(700); await page.evaluate(() => { (window as unknown as { __slow: unknown[] }).__slow.length = 0; }); await target.tap(); await page.waitForTimeout(500); return page.evaluate(() => (window as unknown as { __slow: { name: string; ms: number }[] }).__slow.reduce((m, e) => Math.max(m, e.ms), 0)); };
+  const taps = [await tap(page.locator('[data-scene="2"] .gap-list button').first()), await tap(page.getByRole('button', { name: /^Public sector/ })), await tap(page.getByLabel('Your name'))];
+  await page.evaluate(() => { (window as unknown as { __slow: unknown[] }).__slow.length = 0; });
   await page.keyboard.type('Ada');
   await page.waitForTimeout(600);
+  console.log(`  taps on a 4x throttled phone: gap card ${Math.round(taps[0])} ms, door ${Math.round(taps[1])} ms, form field ${Math.round(taps[2])} ms`);
+  for (const ms of taps) expect(ms).toBeLessThan(200);
   const slow = await page.evaluate(() => (window as unknown as { __slow: { name: string; ms: number }[] }).__slow);
   const worst = slow.reduce((m, e) => Math.max(m, e.ms), 0);
-  console.log(`  slowest interaction on a 4x throttled phone: ${Math.round(worst)} ms (${slow.length} events over 16 ms)`);
+  console.log(`  typing on a 4x throttled phone: slowest key ${Math.round(worst)} ms`);
   expect(worst).toBeLessThan(200);
   await context.close();
 });

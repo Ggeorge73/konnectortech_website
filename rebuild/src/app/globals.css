@@ -228,6 +228,21 @@ html[data-mode='brief'] .dial[data-dial='accepted'] .fg { stroke: var(--green); 
 html[data-mode='brief'] .dial[data-dial='accepted'] b { color: var(--green); }
 @media (max-width: 860px) { html[data-mode='story'] .dial span { display: none; } html[data-mode='story'] .dials { grid-template-columns: repeat(3, 1fr); } html[data-mode='story'] .dial { grid-template-columns: 26px 1fr; gap: 8px; padding: 6px 8px; } html[data-mode='story'] .dial svg { width: 26px; height: 26px; } html[data-mode='story'] .dial b { font-size: 0.78rem; } }
 
+/* Frontier technology: an ordinary section on a solid ground (it scrolls up over the 3D like a curtain) */
+.frontier { position: relative; z-index: 3; background: var(--night); border-top: 1px solid var(--wire-line); padding: clamp(64px, 11vh, 120px) 0; }
+.frontier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-top: 28px; }
+.frontier-card { background: var(--navy); border: 1px solid var(--wire-line); border-top: 2px solid var(--cyan); border-radius: var(--radius); padding: 22px; display: flex; flex-direction: column; gap: 12px; scroll-margin-top: calc(var(--header-h) + 16px); }
+.frontier-card h3 { margin: 0; font-size: 1.25rem; }
+.frontier-card h3 span { display: block; font: 500 0.9rem var(--font-body); color: var(--muted); margin-top: 2px; }
+.frontier-card dl { margin: 0; display: grid; gap: 12px; }
+.frontier-card dt { font: 500 0.64rem var(--font-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--cyan-soft); margin-bottom: 3px; }
+.frontier-card dd { margin: 0; color: var(--text); font-size: 0.96rem; }
+.frontier-steps { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; color: var(--muted); font-size: 0.92rem; }
+.frontier-steps b { color: var(--text); font-weight: 600; }
+.frontier-links { margin: auto 0 0; padding-top: 6px; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: 0.92rem; }
+.frontier-links a { padding: 6px 0; }
+.frontier-note { margin: 18px 0 0; color: var(--muted); font-size: 0.86rem; max-width: 80ch; }
+
 /* Two doors */
 .doors { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 20px; }
 .door { text-align: left; background: var(--navy); color: var(--text); border: 1px solid var(--wire-strong); border-radius: var(--radius); padding: 18px; cursor: pointer; font: inherit; transition: border-color 0.4s var(--ease), background-color 0.4s var(--ease), opacity 0.4s; display: flex; flex-direction: column; gap: 6px; }

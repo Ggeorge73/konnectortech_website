@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getServices } from '@/lib/content';
+import { frontier, getServices } from '@/lib/content';
+import { FRONTIER_DISCLAIMER, FrontierCard } from '@/components/Frontier';
 import { callHref, promises, sectors, site, callLabel } from '@/lib/site';
 import { CtaBand, PageHead } from '@/components/Page';
 
@@ -42,6 +43,16 @@ export default function PrivateSector() {
           </div>
         </div>
       </section>
+      {frontier.some((f) => f.sector === 'private') ? (
+        <section className="section" aria-labelledby="frontier-title">
+          <div className="wrap">
+            <h2 id="frontier-title">Healthcare: frontier technology, landed</h2>
+            <p className="lede">New clinical technology only helps once it works inside your hospital&apos;s systems, rules and routines. We integrate it; we do not invent it.</p>
+            <div className="frontier-grid">{frontier.filter((f) => f.sector === 'private').map((f) => <FrontierCard key={f.key} item={f} pos="private-sector" compact />)}</div>
+            <p className="frontier-note">{FRONTIER_DISCLAIMER}</p>
+          </div>
+        </section>
+      ) : null}
       <CtaBand pos="private-sector" sector="private" />
     </>
   );

@@ -118,6 +118,38 @@ test.describe('home page', () => {
     await expect(page.locator('[data-hud="gap-0"]')).toHaveCSS('opacity', '0.45');
   });
 
+  test('frontier technology: three cards between the sectors and the proof, as text only, with Konnector as the integrator', async ({ page }) => {
+    await page.goto('/?mode=brief');
+    const section = page.locator('#frontier');
+    await expect(section.getByRole('heading', { level: 2 })).toHaveText('Frontier technology, landed.');
+    const cards = section.locator('.frontier-card');
+    await expect(cards).toHaveCount(3);
+    for (const [name, fit] of [['Koniku', 'Public sector'], ['QVITI', 'Healthcare'], ['RSQ HOLO', 'Healthcare']]) {
+      const card = cards.filter({ has: page.getByRole('heading', { name: new RegExp(`^${name}`) }) });
+      await expect(card).toHaveCount(1);
+      await expect(card.locator('.stamp').first()).toHaveText(fit);
+      for (const label of ['What it is', 'Where it fits', 'What Konnector does to land it']) await expect(card.getByText(label, { exact: true })).toBeVisible();
+      await expect(card.locator('.frontier-steps li')).toHaveCount(5);
+    }
+    // Text names only until each company agrees: no logos, and never called partners
+    await expect(section.locator('img, svg')).toHaveCount(0);
+    expect((await section.innerText()).toLowerCase()).not.toContain('partner');
+    await expect(section).toContainText('We do not invent these devices');
+    // It sits after the sectors scene and before the proof
+    const order = await page.evaluate(() => ['sectors', 'frontier', 'proof'].map((id) => document.getElementById(id)!.getBoundingClientRect().top));
+    expect(order[0]).toBeLessThan(order[1]);
+    expect(order[1]).toBeLessThan(order[2]);
+    // Each sector page links to its own cards
+    await page.goto('/public-sector/');
+    await expect(page.locator('.frontier-card')).toHaveCount(1);
+    await expect(page.locator('.frontier-card')).toContainText('Koniku');
+    await expect(page.locator('.frontier-card').getByRole('link', { name: 'How we land it' })).toHaveAttribute('href', '/#frontier-koniku');
+    await page.goto('/private-sector/');
+    await expect(page.locator('.frontier-card')).toHaveCount(2);
+    await expect(page.locator('.frontier-card').first()).toContainText('QVITI');
+    await expect(page.locator('.frontier-card').last()).toContainText('RSQ HOLO');
+  });
+
   test('choosing a door sets the secondary button and the form sector, and is recorded', async ({ page }) => {
     await page.goto('/?mode=brief');
     const scene5 = page.locator('[data-scene="5"]');

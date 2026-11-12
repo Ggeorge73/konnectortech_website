@@ -294,7 +294,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     grab?.addEventListener('pointerdown', onDown);
     gl.domElement.addEventListener('webglcontextlost', onLost);
     // Used by scripts/capture-stills.mjs and the tests to hold the story at a given time
-    (window as unknown as { __ktStory?: unknown }).__ktStory = { setT: (t: number | null) => { s.forcedT = t; }, ready: () => s.live, time: () => s.T, stats: () => ({ tier: s.tier, lowRes: s.lowRes, dpr: s.dpr, calls: v.calls, T: s.T, line: s.u, branches: s.branchP, arrive: s.arriveP, mark: s.tau, stage: s.stageOpacity, sphere: [s.sphereScreen.x, s.sphereScreen.y], size: [s.W, s.H] }) };
+    (window as unknown as { __ktStory?: unknown }).__ktStory = { setT: (t: number | null) => { s.forcedT = t; }, ready: () => s.live, time: () => s.T, stats: () => ({ tier: s.tier, lowRes: s.lowRes, dpr: s.dpr, calls: v.calls, frames: s.frames, T: s.T, line: s.u, branches: s.branchP, arrive: s.arriveP, mark: s.tau, stage: s.stageOpacity, sphere: [s.sphereScreen.x, s.sphereScreen.y], size: [s.W, s.H] }) };
     return () => {
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);

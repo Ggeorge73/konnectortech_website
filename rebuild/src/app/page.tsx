@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { callHref, heroHeadline, promises, sectors, site, stages, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
-import { credentials, getProof, getServices } from '@/lib/content';
+import { credentials, frontier, getProof, getServices } from '@/lib/content';
+import { FRONTIER_DISCLAIMER, FrontierCard } from '@/components/Frontier';
 import { ACCEPTED_AT, GATE_AT, SERVICE_AT } from '@/story/timeline';
 import { GapCards } from '@/components/GapCards';
 import { StoryShell } from '@/components/StoryShell';
@@ -154,6 +155,29 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Frontier technology: an ordinary section between scenes 5 and 6. It leads scene 6, so the 3D rests from here on. */}
+      {frontier.length ? (
+        <section className="frontier" id="frontier" data-scene-lead="6" aria-labelledby="frontier-title">
+          <div className="wrap">
+            <p className="hud">Frontier technology</p>
+            <h2 id="frontier-title">Frontier technology, landed.</h2>
+            <p className="lede">
+              Breakthrough technology only matters once it works inside your environment. We do not invent these devices. We close the gaps
+              between the maker&apos;s device and your systems, security, compliance, people and rollout: the same gaps every project fails in.
+            </p>
+            <div className="frontier-grid">{frontier.map((f) => <FrontierCard key={f.key} item={f} pos="home" />)}</div>
+            <p className="frontier-note">{FRONTIER_DISCLAIMER}</p>
+            <DraftNote show={frontier.some((f) => f.draft)}>
+              Preview only: these three cards wait on two things from Konnector. The wording must be checked against each company&apos;s site, and each
+              company must agree to be named. Until then they are stamped as drafts and are left out of the production build.
+            </DraftNote>
+            <div className="ctas">
+              <a className="btn btn-primary" href="#contact" data-cta="plan" data-pos="frontier">{site.cta.main}</a>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {/* Scene 6: Proof (the evidence). Normal scrolling; the 3D rests here. */}
       <section className="scene scene--proof" data-scene="6" id="proof" aria-labelledby="s6-title">

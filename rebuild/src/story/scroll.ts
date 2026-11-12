@@ -9,7 +9,12 @@ export function createScrollTimeline() {
     const y = window.scrollY;
     ranges = Array.from(document.querySelectorAll<HTMLElement>('[data-scene]'))
       .sort((a, b) => Number(a.dataset.scene) - Number(b.dataset.scene))
-      .map((el) => ({ el, top: el.getBoundingClientRect().top + y, height: Math.max(1, el.offsetHeight) }));
+      .map((el) => {
+        // A scene can be led by an ordinary section (see scrollTime.ts): its range then runs from that section's top
+        const lead = document.querySelector<HTMLElement>(`[data-scene-lead="${el.dataset.scene}"]`);
+        const top = (lead ?? el).getBoundingClientRect().top + y, bottom = el.getBoundingClientRect().top + y + el.offsetHeight;
+        return { el, top, height: Math.max(1, bottom - top) };
+      });
   };
   const getT = () => {
     if (!ranges.length) measure();

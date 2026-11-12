@@ -94,7 +94,7 @@ covers, so this is worth half an hour of a person's time before launch.
 | Safari's engine (WebKit) | Pipeline, 4 tests including the story starting | Pass |
 | Firefox | Pipeline, 4 tests | Pass in brief mode. The pipeline's Firefox had no 3D, so the story did not run there. It is now asked to draw in software; the next run will show whether that works. |
 | A browser with 3D turned off | Test | Brief mode, and "Play the story" is not offered |
-| Interaction delay | Test on an emulated phone, 4x slower processor, brief mode | Slowest response 168 ms against a limit of 200 ms |
+| Interaction delay | Test on an emulated phone, 4x slower processor, brief mode | Tap on a gap card 72 ms, a door 48 ms, a form field 32 ms, a key press 24 ms, against a limit of 200 ms |
 
 **Needs a person, and cannot be done from here:**
 
@@ -129,8 +129,24 @@ and `#top` still works. The sitemap lists every new page. The live site's files 
 | Full tier: 3D code, texture decoder and models | 3 MB | 2.20 MB |
 | Hero still images | 200 KB | 142.9 KB |
 
+## Added after the gate was written: frontier technology
+
+A new ordinary section, "Frontier technology, landed", sits between scene 5 and scene 6 on the home page, with three
+cards: Koniku, QVITI and RSQ HOLO. Konnector is shown as the integrator, not the inventor. The matching cards are
+also on the public sector page (Koniku) and the private sector page under Healthcare (QVITI, RSQ HOLO).
+
+- It is text only: no new 3D, no images, no logos. The 3D rests while it is on screen, as it does for the proof.
+  First-load size went from 171.7 KB to 174.5 KB (limit 200 KB). 3D sizes are unchanged.
+- Each "what it is" line is the company's own description, attributed to it. Konnector makes no claim for the
+  products. The word "partner" is not used for them.
+- All three cards are drafts. They are stamped in the preview, and a production build refuses to build until each
+  one's wording has been checked against the company's site and the company has agreed to be named.
+- Tests cover the three cards, the text-only rule, the order on the page, the sector-page links, and an
+  accessibility scan of the section in story mode.
+
 ## What the owner still holds
 
+- Frontier technology: confirm each company agrees to be named, and check the three descriptions.
 - Content for launch: at least two delivery records, credentials and registrations, the capability statement PDF,
   the booking link, and a read of the privacy notice and the reply promise.
 - The four device checks above.
