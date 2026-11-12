@@ -132,8 +132,9 @@ and `#top` still works. The sitemap lists every new page. The live site's files 
 ## Added after the gate was written: frontier technology
 
 A new ordinary section, "Frontier technology, landed", sits between scene 5 and scene 6 on the home page, with three
-cards: Koniku, QVITI and RSQ HOLO. Konnector is shown as the integrator, not the inventor. The matching cards are
-also on the public sector page (Koniku) and the private sector page under Healthcare (QVITI, RSQ HOLO).
+cards: Koniku, QVITI and RSQ HOLO. Konnector is shown as the integrator, not the inventor. All three serve both
+public and private sector customers: each card lists both sides, and all three appear on the public sector page and the
+private sector page with that side's fit, linking back to the full card.
 
 - It is text only: no new 3D, no images, no logos. The 3D rests while it is on screen, as it does for the proof.
   First-load size went from 171.7 KB to 174.5 KB (limit 200 KB). 3D sizes are unchanged.

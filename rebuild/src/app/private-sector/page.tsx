@@ -43,12 +43,12 @@ export default function PrivateSector() {
           </div>
         </div>
       </section>
-      {frontier.some((f) => f.sector === 'private') ? (
+      {frontier.length ? (
         <section className="section" aria-labelledby="frontier-title">
           <div className="wrap">
-            <h2 id="frontier-title">Healthcare: frontier technology, landed</h2>
-            <p className="lede">New clinical technology only helps once it works inside your hospital&apos;s systems, rules and routines. We integrate it; we do not invent it.</p>
-            <div className="frontier-grid">{frontier.filter((f) => f.sector === 'private').map((f) => <FrontierCard key={f.key} item={f} pos="private-sector" compact />)}</div>
+            <h2 id="frontier-title">Frontier technology, landed</h2>
+            <p className="lede">New technology only helps once it works inside your environment: your systems, security rules, compliance and people. We integrate it; we do not invent it.</p>
+            <div className="frontier-grid">{frontier.map((f) => <FrontierCard key={f.key} item={f} pos="private-sector" compact side="private" />)}</div>
             <p className="frontier-note">{FRONTIER_DISCLAIMER}</p>
           </div>
         </section>

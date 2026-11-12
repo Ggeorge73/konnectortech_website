@@ -124,11 +124,16 @@ test.describe('home page', () => {
     await expect(section.getByRole('heading', { level: 2 })).toHaveText('Frontier technology, landed.');
     const cards = section.locator('.frontier-card');
     await expect(cards).toHaveCount(3);
-    for (const [name, fit] of [['Koniku', 'Public sector'], ['QVITI', 'Healthcare'], ['RSQ HOLO', 'Healthcare']]) {
+    // Every technology serves both sides, and its card says so
+    for (const [name, pub, pri] of [['Koniku', 'border screening', 'Industrial sites'], ['QVITI', 'public health systems', 'rehabilitation clinics'], ['RSQ HOLO', 'teaching hospitals', 'surgical centres']]) {
       const card = cards.filter({ has: page.getByRole('heading', { name: new RegExp(`^${name}`) }) });
       await expect(card).toHaveCount(1);
-      await expect(card.locator('.stamp').first()).toHaveText(fit);
+      await expect(card.locator('.stamp').first()).toHaveText('Public and private sector');
       for (const label of ['What it is', 'Where it fits', 'What Konnector does to land it']) await expect(card.getByText(label, { exact: true })).toBeVisible();
+      await expect(card.locator('.frontier-fit li').nth(0)).toContainText('Public:');
+      await expect(card.locator('.frontier-fit li').nth(0)).toContainText(pub);
+      await expect(card.locator('.frontier-fit li').nth(1)).toContainText('Private:');
+      await expect(card.locator('.frontier-fit li').nth(1)).toContainText(pri);
       await expect(card.locator('.frontier-steps li')).toHaveCount(5);
     }
     // Text names only until each company agrees: no logos, and never called partners
@@ -139,15 +144,17 @@ test.describe('home page', () => {
     const order = await page.evaluate(() => ['sectors', 'frontier', 'proof'].map((id) => document.getElementById(id)!.getBoundingClientRect().top));
     expect(order[0]).toBeLessThan(order[1]);
     expect(order[1]).toBeLessThan(order[2]);
-    // Each sector page links to its own cards
-    await page.goto('/public-sector/');
-    await expect(page.locator('.frontier-card')).toHaveCount(1);
-    await expect(page.locator('.frontier-card')).toContainText('Koniku');
-    await expect(page.locator('.frontier-card').getByRole('link', { name: 'How we land it' })).toHaveAttribute('href', '/#frontier-koniku');
-    await page.goto('/private-sector/');
-    await expect(page.locator('.frontier-card')).toHaveCount(2);
-    await expect(page.locator('.frontier-card').first()).toContainText('QVITI');
-    await expect(page.locator('.frontier-card').last()).toContainText('RSQ HOLO');
+    // Both sector pages show all three, each with that side's fit and a link back to its card on the home page
+    for (const [path, fits] of [['/public-sector/', ['border screening', 'public health systems', 'teaching hospitals']], ['/private-sector/', ['Industrial sites', 'rehabilitation clinics', 'surgical centres']]] as const) {
+      await page.goto(path);
+      const sectorCards = page.locator('.frontier-card');
+      await expect(sectorCards).toHaveCount(3);
+      for (const [i, key] of ['koniku', 'qviti', 'rsq-holo'].entries()) {
+        await expect(sectorCards.nth(i)).toContainText(fits[i]);
+        await expect(sectorCards.nth(i).getByRole('link', { name: 'How we land it' })).toHaveAttribute('href', `/#frontier-${key}`);
+      }
+      await expect(page.locator('.frontier-card img, .frontier-card svg')).toHaveCount(0);
+    }
   });
 
   test('choosing a door sets the secondary button and the form sector, and is recorded', async ({ page }) => {

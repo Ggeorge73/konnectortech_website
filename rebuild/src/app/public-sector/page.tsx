@@ -47,12 +47,12 @@ export default function PublicSector() {
           </div>
         </section>
       ) : null}
-      {frontier.some((f) => f.sector === 'public') ? (
+      {frontier.length ? (
         <section className="section" aria-labelledby="frontier-title">
           <div className="wrap">
             <h2 id="frontier-title">Frontier technology, landed</h2>
-            <p className="lede">New detection technology only helps once it works inside your environment. We integrate it; we do not invent it.</p>
-            <div className="frontier-grid">{frontier.filter((f) => f.sector === 'public').map((f) => <FrontierCard key={f.key} item={f} pos="public-sector" compact />)}</div>
+            <p className="lede">New technology only helps once it works inside your environment: your systems, security rules, approvals and people. We integrate it; we do not invent it.</p>
+            <div className="frontier-grid">{frontier.map((f) => <FrontierCard key={f.key} item={f} pos="public-sector" compact side="public" />)}</div>
             <p className="frontier-note">{FRONTIER_DISCLAIMER}</p>
           </div>
         </section>

@@ -239,6 +239,8 @@ html[data-mode='brief'] .dial[data-dial='accepted'] b { color: var(--green); }
 .frontier-card dd { margin: 0; color: var(--text); font-size: 0.96rem; }
 .frontier-steps { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; color: var(--muted); font-size: 0.92rem; }
 .frontier-steps b { color: var(--text); font-weight: 600; }
+.frontier-fit { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.frontier-fit b { font-weight: 600; }
 .frontier-links { margin: auto 0 0; padding-top: 6px; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: 0.92rem; }
 .frontier-links a { padding: 6px 0; }
 .frontier-note { margin: 18px 0 0; color: var(--muted); font-size: 0.86rem; max-width: 80ch; }

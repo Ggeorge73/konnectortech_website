@@ -68,5 +68,5 @@ export const contractRoutes = live(company.contractRoutes as Fact[]);
 export const people = live(company.people as Person[]);
 
 // Frontier technologies Konnector helps customers integrate (content/frontier.json). Konnector is the integrator.
-export type FrontierItem = { key: string; company: string; product: string; url: string; what: string; fit: string; sector: 'public' | 'private'; sectorLabel: string; steps: [string, string][]; draft?: boolean };
+export type FrontierItem = { key: string; company: string; product: string; url: string; what: string; fitPublic: string; fitPrivate: string; steps: [string, string][]; draft?: boolean };
 export const frontier = live(frontierData.items as FrontierItem[]);
