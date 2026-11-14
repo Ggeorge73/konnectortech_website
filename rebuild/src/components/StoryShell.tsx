@@ -23,7 +23,7 @@ export function StoryShell() {
   const bar = useRef<HTMLDivElement>(null);
 
   // 3D unavailable or too slow on this device: fall back to brief mode without losing the visitor's place.
-  const onFail = useRef((reason: string) => { track('brief_mode_opened', { reason }); setMode('brief', false); }).current;
+  const onFail = useRef((reason: string) => { track('brief_mode_opened', { reason }); setMode('brief'); }).current;
 
   useEffect(() => {
     const d = document.documentElement;

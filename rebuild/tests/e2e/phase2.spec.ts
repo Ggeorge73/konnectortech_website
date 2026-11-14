@@ -39,7 +39,8 @@ test.describe('tier matrix: the full story is the default', () => {
     ['Phone (touch, narrow screen)', { renderer: APPLE, context: { viewport: { width: 390, height: 800 }, hasTouch: true, isMobile: true } }, 'story', 'light'],
     ['Reduced motion on', { renderer: NVIDIA, context: { reducedMotion: 'reduce' } }, 'brief', 'brief', 'reduced-motion'],
     ['Data saver on', { renderer: NVIDIA, saveData: true }, 'brief', 'brief', 'data-saver'],
-    ['Slow connection (2G)', { renderer: NVIDIA, effectiveType: '2g' }, 'brief', 'brief', 'slow-connection'],
+    // A slow connection no longer switches to brief mode: the story always opens (owner decision, 14 Nov 2026)
+    ['Slow connection (2G)', { renderer: NVIDIA, effectiveType: '2g' }, 'story', 'full'],
     ['3D unavailable (no WebGL)', { noWebgl: true }, 'brief', 'brief', 'no-3d'],
   ];
   for (const [name, device, mode, tier, why] of matrix) {
@@ -51,15 +52,16 @@ test.describe('tier matrix: the full story is the default', () => {
     });
   }
 
-  test('visitor choice: "Skip the story" is remembered, and "Play the story" brings it back', async ({ browser }) => {
+  test('the story always opens: no "Skip the story", and an old remembered skip is cleared', async ({ browser }) => {
     const r = await open(browser, { renderer: NVIDIA });
-    await r.page.getByRole('button', { name: 'Skip the story' }).first().click();
-    await r.page.reload();
-    await expect(r.page.locator('html')).toHaveAttribute('data-mode', 'brief');
-    await expect(r.page.locator('html')).toHaveAttribute('data-brief-why', 'choice');
-    await r.page.getByRole('button', { name: 'Play the story' }).first().click();
+    await expect(r.page.locator('html')).toHaveAttribute('data-mode', 'story');
+    await expect(r.page.getByRole('button', { name: 'Skip the story' })).toHaveCount(0);
+    await expect(r.page.getByRole('button', { name: 'Play the story' })).toHaveCount(0);
+    // A visitor who skipped on an earlier version of the site gets the story again
+    await r.page.evaluate(() => localStorage.setItem('kt-mode', 'brief'));
     await r.page.reload();
     await expect(r.page.locator('html')).toHaveAttribute('data-mode', 'story');
+    expect(await r.page.evaluate(() => localStorage.getItem('kt-mode'))).toBeNull();
     await r.context.close();
   });
 

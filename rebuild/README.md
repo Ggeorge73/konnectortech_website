@@ -12,7 +12,7 @@ moves until you say so.
 | Part | Where | Notes |
 | --- | --- | --- |
 | Home page, seven scenes | `src/app/page.tsx` | One markup, two modes: **story** (3D, pinned, scroll-played) and **brief** (stills, normal scrolling). |
-| Brief mode | same page, `html[data-mode="brief"]` | Used without scripts, and only for reduced motion, data saver, a slow connection, no 3D, or by choice. The full story is the default. Tier matrix: `docs/phase-2-gate.md`. |
+| Brief mode | same page, `html[data-mode="brief"]` | Used without scripts, and only for reduced motion, data saver or no 3D. Every other visit opens with the story: there is no "Skip the story" and no remembered skip (owner decision, 14 Nov 2026). Tier matrix: `docs/phase-2-gate.md`. |
 | 3D story | `src/story/` | React Three Fiber + GSAP ScrollTrigger. `Story.tsx` (canvas and scene components), `director.ts` (story time → state of every part), `scrollTime.ts` (one ScrollTrigger per scene), `overlay.ts` (HUD and text reveals), `world.ts` (corridor, track, skyline), `sphere.ts` (36 plates → the mark), `sound.ts`. Loaded after first paint. |
 | Supporting pages | `src/app/*` | Services (index + 4), How we deliver, Public sector, Private sector, Proof (index + records), About, Contact, Privacy notice. |
 | Content | `content/` | Markdown for services and delivery records, `company.json` for credentials, registrations and people. |

@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react';
 import { getMode, setMode, track, type Mode } from '@/lib/track';
 
-// "Skip the story" opens brief mode: the same copy and buttons, still images, normal scrolling.
-// Anyone can switch at any time and the choice is remembered.
+// The home page always opens with the story (owner decision, 14 Nov 2026), so there is no "Skip the story".
+// Only when the plain version opened by itself (reduced motion or data saver) is "Play the story" offered,
+// and only on a device that can run it.
 export function ModeSwitch({ pos, className = 'link-quiet' }: { pos: string; className?: string }) {
   const [mode, setM] = useState<Mode>('brief');
   const [can, setCan] = useState(false);
@@ -14,25 +15,18 @@ export function ModeSwitch({ pos, className = 'link-quiet' }: { pos: string; cla
     window.addEventListener('kt:mode', sync);
     return () => window.removeEventListener('kt:mode', sync);
   }, []);
-  if (mode === 'brief' && !can) return null;
-  const toStory = mode === 'brief';
+  if (mode !== 'brief' || !can) return null;
   return (
     <button
       type="button"
       className={className}
       onClick={() => {
-        if (toStory) {
-          track('story_opened', { position: pos });
-          setMode('story');
-        } else {
-          track('story_skipped', { position: pos });
-          track('brief_mode_opened', { reason: 'choice' });
-          setMode('brief');
-        }
+        track('story_opened', { position: pos });
+        setMode('story');
         window.scrollTo({ top: 0, behavior: 'auto' });
       }}
     >
-      {toStory ? 'Play the story' : 'Skip the story'}
+      Play the story
     </button>
   );
 }

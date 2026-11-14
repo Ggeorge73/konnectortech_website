@@ -21,11 +21,11 @@ export function track(event: string, props?: TrackProps) {
 // Mode and sector live on <html> so CSS can react without waiting for React.
 export type Mode = 'story' | 'brief';
 export const getMode = (): Mode => (document.documentElement.dataset.mode === 'story' ? 'story' : 'brief');
-export function setMode(mode: Mode, remember = true) {
+// The mode is never remembered: every visit opens with the story unless the device asks for the plain version.
+export function setMode(mode: Mode) {
   const d = document.documentElement;
   if (mode === 'story' && d.dataset.canStory !== '1') return false;
   d.dataset.mode = mode;
-  if (remember) try { localStorage.setItem('kt-mode', mode); } catch { /* private mode */ }
   window.dispatchEvent(new CustomEvent('kt:mode', { detail: mode }));
   return true;
 }

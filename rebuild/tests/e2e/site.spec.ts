@@ -179,7 +179,7 @@ test.describe('home page', () => {
     expect(await events(page)).toEqual(expect.arrayContaining(['brief_mode_opened', 'scene_reached', 'sector_chosen', 'cta_click']));
   });
 
-  test('story mode starts the 3D scene, and "Skip the story" opens brief mode', async ({ page }) => {
+  test('story mode starts the 3D scene, and offers no "Skip the story"', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/?mode=story');
@@ -188,9 +188,8 @@ test.describe('home page', () => {
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(500);
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page.getByRole('button', { name: 'Skip the story' }).first().click();
-    await expect(page.locator('html')).toHaveAttribute('data-mode', 'brief');
-    expect(await events(page)).toEqual(expect.arrayContaining(['story_skipped', 'brief_mode_opened']));
+    await expect(page.getByRole('button', { name: 'Skip the story' })).toHaveCount(0);
+    await expect(page.locator('html')).toHaveAttribute('data-mode', 'story');
     expect(errors).toEqual([]);
   });
 

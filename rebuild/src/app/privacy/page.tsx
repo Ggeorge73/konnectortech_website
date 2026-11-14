@@ -20,7 +20,7 @@ export default function Privacy() {
           </ul>
           <h2>Site measurement</h2>
           <p>We count visits and a small set of page events, such as a button being pressed or a form being sent, to learn whether the site works for visitors. This measurement does not use advertising cookies and does not build a profile of you.</p>
-          <p>The site remembers two choices in your browser so pages behave as you expect: whether you prefer the plain version of the home page, and which sector you chose. Neither is sent to us.</p>
+          <p>The site remembers one choice in your browser while you visit, so pages behave as you expect: which sector you chose. It is not sent to us.</p>
           <h2>Protection against spam</h2>
           <p>The form uses an invisible check to tell people from automated senders, and limits how many enquiries one connection can send in a short time.</p>
           <p>
