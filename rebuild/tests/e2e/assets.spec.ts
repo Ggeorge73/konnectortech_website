@@ -11,7 +11,7 @@ const at = async (page: Page, T: number) => {
   const start = await page.evaluate(() => (window as unknown as { __ktStory: Story }).__ktStory.stats().frames);
   await page.waitForFunction((f) => (window as unknown as { __ktStory: Story }).__ktStory.stats().frames > f + 3, start, { timeout: 20_000 });
 };
-/** Average brightness of the top two thirds of the screen (the sky and the horizon), 0 to 255. */
+/** Average brightness of the sky and the horizon (below the header, above the lower third), 0 to 255. */
 const skyBrightness = async (page: Page) => {
   const png = await page.screenshot();
   return page.evaluate(async (b64) => {
@@ -22,7 +22,8 @@ const skyBrightness = async (page: Page) => {
     c.width = img.width; c.height = img.height;
     const g = c.getContext('2d')!;
     g.drawImage(img, 0, 0);
-    const d = g.getImageData(0, 0, img.width, Math.floor(img.height * 0.66)).data;
+    const top = Math.floor(img.height * 0.1);
+    const d = g.getImageData(0, top, img.width, Math.floor(img.height * 0.66) - top).data;
     let sum = 0;
     for (let i = 0; i < d.length; i += 4) sum += (d[i] + d[i + 1] + d[i + 2]) / 3;
     return sum / (d.length / 4);
@@ -50,6 +51,7 @@ test.describe('scenes 4 and 5 backdrop', () => {
       if (block) await page.route('**/models/backdrop_*', (r) => r.abort());
       await page.goto('/?mode=story&tier=light');
       await story(page);
+      await page.waitForLoadState('networkidle'); // the pictures have arrived (or failed)
       await at(page, 4.5);
       const sky = await skyBrightness(page);
       const mode = await page.locator('html').getAttribute('data-mode');
@@ -60,7 +62,7 @@ test.describe('scenes 4 and 5 backdrop', () => {
     expect(missing.mode).toBe('story'); // a missing backdrop never sends the visitor to brief mode
     expect(missing.errors).toEqual([]);
     expect(shown.errors).toEqual([]);
-    expect(shown.sky).toBeGreaterThan(missing.sky + 2); // the glow of the city's horizon, over the plain night
+    expect(shown.sky).toBeGreaterThan(missing.sky + 10); // the glow of the city's horizon, over the plain night
   });
 });
 
