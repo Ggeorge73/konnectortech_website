@@ -6,10 +6,16 @@ Run through `npm run art` (see art/README.md). Outputs, in art/out/:
   room_lines.glb  the blueprint line set (feature edges) for the same geometry
 Both meshes carry a per-vertex `_sys` attribute: 0 = unnamed equipment, 1..5 = the five systems.
 
+Surface detail: the floor, walls, ceiling, rack fronts, rack bodies and cable trays each multiply their grey (the
+vertex colour "Col") by a tiling photo texture from art/src/ before the bake, so the baked light carries real surface
+detail. Each texture is scaled so its average is 1, and only part of its contrast is kept: the room stays the same
+room, with the same overall greys.
+
 Layout matches src/story/world.ts so the line, labels and camera need no change.
 Coordinates below are written in the site's space (x right, y up, corridor along -z) and converted.
 """
 import math
+import os
 import sys
 
 import bpy  # must come first: it makes bmesh and mathutils importable
@@ -29,6 +35,8 @@ bm = bmesh.new()
 shade_layer = bm.loops.layers.color.new("Col")
 sys_layer = bm.verts.layers.float.new("_sys")
 kind_layer = bm.faces.layers.int.new("kind")  # 0 surface, 1 strip light, 2 status light
+elem_layer = bm.faces.layers.int.new("elem")  # which surface texture a face takes (0 = none), see DETAIL below
+FLOOR, WALL, CEILING, RACK_FRONT, RACK_BODY, TRAY = 1, 2, 3, 4, 5, 6
 
 
 def rnd(i):
@@ -36,7 +44,7 @@ def rnd(i):
     return x - math.floor(x)
 
 
-def box(cx, cy, cz, sx, sy, sz, shade=0.3, system=0, kind=0, bevel=0.0):
+def box(cx, cy, cz, sx, sy, sz, shade=0.3, system=0, kind=0, bevel=0.0, elem=0):
     """Axis-aligned box given in site space; converted to Blender space (x, -z, y)."""
     if abs(cx) > 0.9:  # everything along the walls sits OUT further from the centre line: a room, not a narrow corridor
         cx += math.copysign(OUT_SHIFT, cx)
@@ -50,6 +58,7 @@ def box(cx, cy, cz, sx, sy, sz, shade=0.3, system=0, kind=0, bevel=0.0):
     for q in quads:
         f = bm.faces.new([verts[i] for i in q])
         f[kind_layer] = kind
+        f[elem_layer] = elem
         for loop in f.loops:
             loop[shade_layer] = (shade, shade, shade, 1.0)
         faces.append(f)
@@ -61,13 +70,13 @@ def box(cx, cy, cz, sx, sy, sz, shade=0.3, system=0, kind=0, bevel=0.0):
 
 def rack(side, z, system, seed):
     x = side * 1.6
-    box(x, 1.05, z, 0.7, 2.1, 0.9, shade=0.11, system=system, bevel=0.012)
-    box(x, 0.03, z, 0.74, 0.06, 0.94, shade=0.07, system=system)  # plinth
+    box(x, 1.05, z, 0.7, 2.1, 0.9, shade=0.11, system=system, bevel=0.012, elem=RACK_BODY)
+    box(x, 0.03, z, 0.74, 0.06, 0.94, shade=0.07, system=system, elem=RACK_BODY)  # plinth
     fx = side * 1.24
     for i in range(8):
         y = 0.22 + i * 0.235
         s = 0.16 + rnd(seed + i) * 0.16
-        box(fx, y, z, 0.03, 0.19, 0.8, shade=s, system=system, bevel=0.004)
+        box(fx, y, z, 0.03, 0.19, 0.8, shade=s, system=system, bevel=0.004, elem=RACK_FRONT)
         box(fx - side * 0.018, y - 0.05, z - 0.1, 0.012, 0.03, 0.42, shade=s * 0.6, system=system)  # vent slot
         box(fx - side * 0.02, y + 0.04, z + 0.32, 0.02, 0.028, 0.05, system=system, kind=2)  # status light
     for dz in (-0.42, 0.42):  # door handles
@@ -77,17 +86,17 @@ def rack(side, z, system, seed):
 # Shell in 2 m bays, with skirting and a ceiling grid
 for z in range(3, END, -2):
     zc = z - 1
-    box(0, -0.05, zc, 4.4 + 2 * OUT_SHIFT, 0.1, 2, shade=0.24)
-    box(0, 3.05, zc, 4.4 + 2 * OUT_SHIFT, 0.1, 2, shade=0.14)
+    box(0, -0.05, zc, 4.4 + 2 * OUT_SHIFT, 0.1, 2, shade=0.24, elem=FLOOR)
+    box(0, 3.05, zc, 4.4 + 2 * OUT_SHIFT, 0.1, 2, shade=0.14, elem=CEILING)
     for side in (-1, 1):
-        box(side * 2.15, 1.5, zc, 0.1, 3, 2, shade=0.2)
+        box(side * 2.15, 1.5, zc, 0.1, 3, 2, shade=0.2, elem=WALL)
         box(side * 2.08, 0.06, zc, 0.04, 0.12, 2, shade=0.1)
         box(side * 2.08, 1.5, z, 0.05, 3, 0.08, shade=0.16)  # wall rib between bays
     box(0, 2.98, z, 4.2 + 2 * OUT_SHIFT, 0.05, 0.06, shade=0.1)  # ceiling beam
 # End frame of the corridor (an open doorway into the dark)
-box(-1.6, 1.5, END, 1.1, 3, 0.12, shade=0.16)
-box(1.6, 1.5, END, 1.1, 3, 0.12, shade=0.16)
-box(0, 2.75, END, 2.1, 0.5, 0.12, shade=0.16)
+box(-1.6, 1.5, END, 1.1, 3, 0.12, shade=0.16, elem=WALL)
+box(1.6, 1.5, END, 1.1, 3, 0.12, shade=0.16, elem=WALL)
+box(0, 2.75, END, 2.1, 0.5, 0.12, shade=0.16, elem=WALL)
 
 # Strip lights down the centre of the ceiling
 for z in LIGHT_Z:
@@ -103,7 +112,7 @@ for z in LIGHT_Z:
 # Cable trays, cables and droppers
 for side in (-1, 1):
     for z in range(3, END, -2):
-        box(side * 1.45, 2.55, z - 1, 0.6, 0.03, 1.96, shade=0.22)
+        box(side * 1.45, 2.55, z - 1, 0.6, 0.03, 1.96, shade=0.22, elem=TRAY)
         for edge in (-0.3, 0.3):
             box(side * 1.45 + edge, 2.59, z - 1, 0.02, 0.08, 1.96, shade=0.2)
         box(side * 1.45, 2.8, z - 0.2, 0.03, 0.5, 0.03, shade=0.12)  # hanger
@@ -175,13 +184,65 @@ print(f"geometry: {len(bm.faces)} faces, {len(line_bm.edges)} blueprint edges")
 # ── Materials: surfaces take their grey from vertex colour; lights are emitters ──
 mesh = bpy.data.meshes.new("room")
 kinds = [f[kind_layer] for f in bm.faces]
+elems = [f[elem_layer] for f in bm.faces]
 bm.to_mesh(mesh)
 room = bpy.data.objects.new("room", mesh)
 scene.collection.objects.link(room)
 image = bpy.data.images.new("bake", TEX, TEX, alpha=False, float_buffer=True)
 
 
-def material(name, emission=None, strength=0.0):
+# Surface textures (art/src/, from Higgsfield): file, size of one tile in metres, how much of its contrast is kept,
+# and a turn in degrees (the cable tray's cables must run along the corridor).
+SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "src")
+DETAIL = {
+    FLOOR: ("t01_floor.png", 2.4, 0.6, 0),  # 4 x 4 raised-floor tiles of 600 mm
+    WALL: ("t04_wall.png", 3.0, 0.4, 0),  # 2 x 3 wall panels over the 3 m wall height
+    CEILING: ("t07_ceiling.png", 2.4, 0.5, 0),  # ceiling grid at 600 mm
+    RACK_FRONT: ("t03_rack_front.png", 0.8, 0.6, 0),  # server faces across each 0.8 m front unit
+    RACK_BODY: ("t10_rack_body.png", 0.9, 0.45, 0),  # louvred side panels
+    TRAY: ("t08_cable_tray.png", 0.6, 0.45, 90),  # wire tray, one tile across its width
+}
+DETAIL_MAX = 1.7  # cap on the brightening, so a bright fleck in a dark texture cannot read as a light
+
+
+def detail_factor(nt, elem):
+    """Box-mapped texture in object space, as a grey factor averaging 1: (1 - k) + k * texture / mean."""
+    import numpy as np
+
+    file, tile, keep, turn = DETAIL[elem]
+    img = bpy.data.images.load(os.path.join(SRC, file), check_existing=True)
+    img.colorspace_settings.name = "Non-Color"
+    px = np.empty(img.size[0] * img.size[1] * 4, dtype=np.float32)
+    img.pixels.foreach_get(px)
+    px = px.reshape(-1, 4)
+    mean = float((px[:, 0] * 0.2126 + px[:, 1] * 0.7152 + px[:, 2] * 0.0722).mean())
+    coord = nt.nodes.new("ShaderNodeTexCoord")
+    mapping = nt.nodes.new("ShaderNodeMapping")
+    mapping.inputs["Scale"].default_value = (1 / tile, 1 / tile, 1 / tile)
+    mapping.inputs["Rotation"].default_value = (0, 0, math.radians(turn))
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = img
+    tex.projection = "BOX"
+    tex.projection_blend = 0.15
+    tex.interpolation = "Cubic"
+    grey = nt.nodes.new("ShaderNodeRGBToBW")
+    factor = nt.nodes.new("ShaderNodeMath")
+    factor.operation = "MULTIPLY_ADD"
+    factor.inputs[1].default_value = keep / mean
+    factor.inputs[2].default_value = 1 - keep
+    cap = nt.nodes.new("ShaderNodeMath")
+    cap.operation = "MINIMUM"
+    cap.inputs[1].default_value = DETAIL_MAX
+    nt.links.new(coord.outputs["Object"], mapping.inputs["Vector"])
+    nt.links.new(mapping.outputs["Vector"], tex.inputs["Vector"])
+    nt.links.new(tex.outputs["Color"], grey.inputs["Color"])
+    nt.links.new(grey.outputs["Val"], factor.inputs[0])
+    nt.links.new(factor.outputs["Value"], cap.inputs[0])
+    print(f"detail {file}: mean {mean:.3f}, tile {tile} m, keep {keep}")
+    return cap.outputs["Value"]
+
+
+def material(name, emission=None, strength=0.0, elem=0):
     m = bpy.data.materials.new(name)
     m.use_nodes = True
     nt = m.node_tree
@@ -190,7 +251,15 @@ def material(name, emission=None, strength=0.0):
     if emission is None:
         col = nt.nodes.new("ShaderNodeVertexColor")
         col.layer_name = "Col"
-        nt.links.new(col.outputs["Color"], bsdf.inputs["Base Color"])
+        if elem:
+            # grey from the vertex colour, times the surface texture
+            scale = nt.nodes.new("ShaderNodeVectorMath")
+            scale.operation = "SCALE"
+            nt.links.new(col.outputs["Color"], scale.inputs["Vector"])
+            nt.links.new(detail_factor(nt, elem), scale.inputs["Scale"])
+            nt.links.new(scale.outputs["Vector"], bsdf.inputs["Base Color"])
+        else:
+            nt.links.new(col.outputs["Color"], bsdf.inputs["Base Color"])
     else:
         bsdf.inputs["Base Color"].default_value = (0.02, 0.02, 0.02, 1)
         bsdf.inputs["Emission Color"].default_value = (*emission, 1)
@@ -204,10 +273,11 @@ def material(name, emission=None, strength=0.0):
 m_surface = material("surface")
 m_strip = material("strip", (0.86, 0.93, 1.0), 9.0)
 m_led = material("led", (0.0, 0.76, 1.0), 0.0)
-for m in (m_surface, m_strip, m_led):
+m_detail = [material(f"surface_{e}", elem=e) for e in sorted(DETAIL)]  # material index 3 + (elem - 1)
+for m in (m_surface, m_strip, m_led, *m_detail):
     mesh.materials.append(m)
-for poly, k in zip(mesh.polygons, kinds):
-    poly.material_index = k
+for poly, k, e in zip(mesh.polygons, kinds, elems):
+    poly.material_index = k if k or not e else 2 + e
 
 # ── Lightmap UVs ──
 bpy.context.view_layer.objects.active = room

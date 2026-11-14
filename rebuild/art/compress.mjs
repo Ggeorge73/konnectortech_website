@@ -65,6 +65,16 @@ for (const name of ['room_dim', 'room_lit']) {
   fs.rmSync(path.join(OUT, `${name}.light.ktx2`), { force: true });
 }
 
+// Scenes 4 and 5: the far backdrops (art/src/b20, b25; the horizon sits about 83% down each). JPG, not KTX2: Basis
+// blocks would band the long, smooth night sky. Full colour detail is kept (no chroma subsampling) for the same reason.
+for (const [src, name] of [['b20_scene4_backdrop.png', 'backdrop_4'], ['b25_scene5_backdrop.png', 'backdrop_5']]) {
+  for (const [tier, width] of [['light', 1280], ['full', 2048]]) {
+    const dest = path.join(OUT, `${name}.${tier}.jpg`);
+    await sharp(path.join('src', src)).resize(width).jpeg({ quality: 92, mozjpeg: true, chromaSubsampling: '4:4:4' }).toFile(dest);
+    report.push([path.basename(dest), kb(dest)]);
+  }
+}
+
 const sum = (tag) => fs.readdirSync(OUT).filter((f) => f.endsWith('.glb') || f.includes(`.${tag}.`)).reduce((n, f) => n + fs.statSync(path.join(OUT, f)).size, 0);
 console.table(Object.fromEntries(report));
 console.log(`Full tier 3D assets:  ${(sum('full') / 1024).toFixed(0)} KB (budget 3072 KB)`);

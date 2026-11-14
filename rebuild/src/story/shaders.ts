@@ -137,6 +137,27 @@ void main() {
 }`;
 export const GRID_VERT = /* glsl */ `varying vec3 vW; varying float vDepth; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vec4 mv = viewMatrix * w; vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`;
 
+// Scenes 4 and 5: the far horizon behind the grid. vP is the world position on the plane: x across, y up from the ground.
+export const BACKDROP_VERT = /* glsl */ `varying vec2 vP; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vP = w.xy; gl_Position = projectionMatrix * viewMatrix * w; }`;
+// Each picture is placed so its horizon row sits on the ground (y = 0); uHorizon is the share of each picture above it.
+// Past the picture's top the sky carries on in the night colour (the pictures' own sky is within a few levels of it),
+// so a tall screen sees more sky, never a stretched picture. Below the picture and at its sides it fades into the night.
+// uMix crossfades from scene 4's picture (uA) to scene 5's (uB); only the pictures in view are read.
+export const BACKDROP_FRAG = /* glsl */ `
+uniform sampler2D uA; uniform sampler2D uB; uniform float uMix; uniform float uOpacity; uniform vec2 uSize; uniform vec2 uHorizon; uniform vec3 uNight;
+varying vec2 vP;
+vec3 layer(sampler2D t, float horizon) {
+  vec2 uv = vec2(0.5 + vP.x / uSize.x, 1.0 - horizon + vP.y / uSize.y);
+  vec3 c = texture2D(t, clamp(uv, 0.0, 1.0)).rgb;
+  float keep = (1.0 - smoothstep(0.93, 1.0, uv.y)) * smoothstep(-0.2, 0.0, uv.y) * smoothstep(0.0, 0.04, uv.x) * (1.0 - smoothstep(0.96, 1.0, uv.x));
+  return mix(uNight, c, keep);
+}
+void main() {
+  vec3 c = uMix < 0.999 ? layer(uA, uHorizon.x) : uNight;
+  if (uMix > 0.001) c = mix(c, layer(uB, uHorizon.y), uMix);
+  gl_FragColor = vec4(mix(uNight, c, uOpacity), 1.0);
+}`;
+
 export function glowTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 128;

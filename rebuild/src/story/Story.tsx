@@ -14,7 +14,7 @@ import { BLOOM_LAYER, createBloom, OVERLAY_LAYER, type Bloom } from './bloom';
 // Model and texture downloads still in flight. The frame loop warms up shaders once this reaches zero.
 const pending = { count: 0 };
 import { buildMechanism, buildPlates, buildSeamTriangle, MARK_RING, MARK_TUBE, NODES, R } from './sphere';
-import { AMBER, CHROME_FRAG, CHROME_VERT, clamp, CYAN, glowTexture, GRID_FRAG, GRID_VERT, LINK_FRAG, LINK_VERT, mix, NIGHT, ROOM_FRAG, ROOM_VERT, smooth, WIRE } from './shaders';
+import { AMBER, BACKDROP_FRAG, BACKDROP_VERT, CHROME_FRAG, CHROME_VERT, clamp, CYAN, glowTexture, GRID_FRAG, GRID_VERT, LINK_FRAG, LINK_VERT, mix, NIGHT, ROOM_FRAG, ROOM_VERT, smooth, WIRE } from './shaders';
 import { createOverlay } from './overlay';
 import { createSound } from './sound';
 
@@ -63,6 +63,57 @@ function GridFloor({ s }: { s: Director }) {
     <mesh ref={mesh} rotation-x={-Math.PI / 2} position={[0, -0.02, -95]}>
       <planeGeometry args={[160, 150]} />
       <shaderMaterial args={[{ vertexShader: GRID_VERT, fragmentShader: GRID_FRAG, uniforms, transparent: true, depthWrite: false }]} />
+    </mesh>
+  );
+}
+
+// Scenes 4 and 5: a far horizon behind the grid. Scene 4 looks out over open country with power lines (Higgsfield b20),
+// scene 5 at the city the line arrives in (b25). One plane, both pictures, crossfaded as the blueprint skyline appears.
+// It belongs to story mode only, so brief mode never downloads it. Light: 1280 px JPGs (about 100 KB for both);
+// Full: 2048 px. Built by art/compress.mjs. If they cannot load, scenes 4 and 5 keep the plain night sky.
+const BACKDROP_Z = -172; // just past the far edge of the grid (z -20 to -170)
+const BACKDROP_W = 320, BACKDROP_H = BACKDROP_W / (2688 / 1152); // metres; the pictures are 21:9
+const BACKDROP_HORIZON = new THREE.Vector2(0.824, 0.839); // share of each picture above its horizon (b20, b25)
+function Backdrop({ s }: { s: Director }) {
+  const gl = useThree((st) => st.gl);
+  const mesh = useRef<THREE.Mesh>(null);
+  const [ready, setReady] = useState(false);
+  const uniforms = useMemo(() => ({ uA: { value: null as THREE.Texture | null }, uB: { value: null as THREE.Texture | null }, uMix: { value: 0 }, uOpacity: { value: 0 }, uSize: { value: new THREE.Vector2(BACKDROP_W, BACKDROP_H) }, uHorizon: { value: BACKDROP_HORIZON }, uNight: { value: NIGHT } }), []);
+  useEffect(() => {
+    let cancelled = false, loaded: THREE.Texture[] = [];
+    const tier = document.documentElement.dataset.tier === 'full' ? 'full' : 'light';
+    const loader = new THREE.TextureLoader();
+    pending.count++;
+    Promise.all([4, 5].map((n) => loader.loadAsync(`/models/backdrop_${n}.${tier}.jpg`)))
+      .then((t) => {
+        loaded = t;
+        if (cancelled) return;
+        for (const x of t) {
+          // Always seen at about its own size or larger, so no smaller copies are needed (less to send to the chip)
+          x.colorSpace = THREE.NoColorSpace; x.generateMipmaps = false; x.minFilter = THREE.LinearFilter;
+          gl.initTexture(x); // upload now, while the story is still loading, not on the frame scene 4 begins
+        }
+        uniforms.uA.value = t[0]; uniforms.uB.value = t[1];
+        setReady(true);
+      })
+      .catch((err) => console.warn('Backdrop not loaded; scenes 4 and 5 keep the plain night sky', err))
+      .finally(() => { pending.count--; });
+    return () => { cancelled = true; loaded.forEach((x) => x.dispose()); };
+  }, [gl, uniforms]);
+  useFrame(() => {
+    // In as scene 4 begins and the camera moves out beside the track (the grid came in with s.sweep), across to the city
+    // as the skyline appears, out with s.finale. The canvas's own dim-out in scene 6 covers the way back to the room.
+    const o = s.finale ? 0 : smooth((s.T - 2.85) / 0.3);
+    uniforms.uOpacity.value = o;
+    uniforms.uMix.value = s.roomU.uSky.value;
+    if (mesh.current) mesh.current.visible = o > 0.004;
+  });
+  if (!ready) return null;
+  // Main view only: left out of the reflections (they cannot reach this far) and of the black pass of the bloom
+  return (
+    <mesh ref={(m) => { mesh.current = m; m?.layers.set(OVERLAY_LAYER); }} position={[0, BACKDROP_H * 0.6, BACKDROP_Z]}>
+      <planeGeometry args={[BACKDROP_W, BACKDROP_H * 2.2]} />
+      <shaderMaterial args={[{ vertexShader: BACKDROP_VERT, fragmentShader: BACKDROP_FRAG, uniforms }]} />
     </mesh>
   );
 }
@@ -318,7 +369,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     s.step(v.t0, dt, scroll.current?.getT() ?? 0);
     let locked = 0;
     for (const on of s.gateOn) if (on) locked++;
-    if (locked > v.locked && s.frames > 5) sound.click(); // a soft click when a ring locks
+    if (locked > v.locked && s.frames > 5) sound.tick(); // a soft tick when a ring locks
     v.locked = locked;
     sound.tone(Math.abs(s.tau - v.tau) > 1e-4 ? s.tau : -1); // a rising tone for the transformation
     if (v.tau < 0.98 && s.tau >= 0.98) sound.click();
@@ -678,6 +729,7 @@ export default function Story({ stage, hud, onFail }: Props) {
         onCreated={({ gl }) => { gl.outputColorSpace = THREE.LinearSRGBColorSpace; gl.setClearColor(NIGHT); }}
       >
         <Corridor uniforms={s.roomU} />
+        <Backdrop s={s} />
         <GridFloor s={s} />
         <Lines s={s} />
         <Gates s={s} />
