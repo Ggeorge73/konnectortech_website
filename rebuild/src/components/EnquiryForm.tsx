@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { callHref, site, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
+import { callHref, show, site, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
 import { getSector, track } from '@/lib/track';
 
 const SECTORS = ['Public sector', 'Private sector', 'Not sure yet'] as const;
@@ -59,7 +59,7 @@ export function EnquiryForm({ pos }: { pos: string }) {
     sync();
     window.addEventListener('kt:sector', sync);
     const a = new URLSearchParams(window.location.search).get('ask');
-    if (a === 'call' || a === 'statement') {
+    if (a === 'call' || (a === 'statement' && show.capabilityStatement)) {
       setAsk(a);
       setV((cur) => (cur.message ? cur : { ...cur, message: a === 'call' ? 'I would like to book a 30-minute call. Good times for me are: ' : 'Please send me your capability statement.' }));
     }
@@ -144,7 +144,7 @@ export function EnquiryForm({ pos }: { pos: string }) {
         </ol>
         <div className="ctas">
           <a className="btn btn-ghost" href={callHref} data-cta="call" data-pos={`${pos}-confirmation`}>{callLabel}</a>
-          <a className="btn btn-ghost" href={statementHref} {...statementAttrs} data-cta="statement" data-pos={`${pos}-confirmation`}>{statementLabel}</a>
+          {show.capabilityStatement ? <a className="btn btn-ghost" href={statementHref} {...statementAttrs} data-cta="statement" data-pos={`${pos}-confirmation`}>{statementLabel}</a> : null}
         </div>
       </div>
     );

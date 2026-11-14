@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { callHref, site, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
+import { callHref, show, site, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
 import { getServices } from '@/lib/content';
 import { ModeSwitch } from './ModeSwitch';
 
@@ -26,7 +26,7 @@ export function Footer() {
               <li><Link href="/how-we-deliver/">How we deliver</Link></li>
               <li><Link href="/public-sector/">Public sector</Link></li>
               <li><Link href="/private-sector/">Private sector</Link></li>
-              <li><Link href="/proof/">Proof</Link></li>
+              {show.proof ? <li><Link href="/proof/">Proof</Link></li> : null}
               <li><Link href="/about/">About</Link></li>
             </ul>
           </nav>
@@ -35,7 +35,7 @@ export function Footer() {
             <ul>
               <li><Link href="/contact/">Contact</Link></li>
               <li><a href={callHref} data-cta="call" data-pos="footer">{callLabel}</a></li>
-              <li><a href={statementHref} {...statementAttrs} data-cta="statement" data-pos="footer">{statementLabel}</a></li>
+              {show.capabilityStatement ? <li><a href={statementHref} {...statementAttrs} data-cta="statement" data-pos="footer">{statementLabel}</a></li> : null}
               <li><a href={`mailto:${site.email}`}>{site.email}</a></li>
               <li><ModeSwitch pos="footer" /></li>
             </ul>

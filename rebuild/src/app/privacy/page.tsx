@@ -23,6 +23,11 @@ export default function Privacy() {
           <p>The site remembers two choices in your browser so pages behave as you expect: whether you prefer the plain version of the home page, and which sector you chose. Neither is sent to us.</p>
           <h2>Protection against spam</h2>
           <p>The form uses an invisible check to tell people from automated senders, and limits how many enquiries one connection can send in a short time.</p>
+          <p>
+            That check is Cloudflare Turnstile, which runs in invisible mode: no puzzle is shown. Cloudflare processes some technical information
+            from your browser to do it, as described in the{' '}
+            <a href="https://www.cloudflare.com/turnstile-privacy-policy/" rel="noopener noreferrer">Cloudflare Turnstile Privacy Addendum</a>.
+          </p>
           <h2>Your choices</h2>
           <p>To see, correct or delete the details you sent us, email <a href={`mailto:${site.email}`}>{site.email}</a>.</p>
           <p className="muted">{site.legalName}, {site.location}.</p>

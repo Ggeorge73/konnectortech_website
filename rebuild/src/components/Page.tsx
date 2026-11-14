@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { callHref, site, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
+import { callHref, show, site, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
 import { ScannerRing } from './Mark';
 
 // Supporting pages use the blueprint style: a wireframe header, ring motifs and the cyan line.
@@ -35,7 +35,7 @@ export function CtaBand({ pos, sector }: { pos: string; sector?: 'public' | 'pri
           </div>
           <div className="ctas" style={{ marginTop: 0 }}>
             <Link className="btn btn-primary" href="/contact/" data-cta="plan" data-pos={pos}>{site.cta.main}</Link>
-            {sector === 'public' ? (
+            {sector === 'public' && show.capabilityStatement ? (
               <a className="btn btn-ghost" href={statementHref} {...statementAttrs} data-cta="statement" data-pos={pos}>{statementLabel}</a>
             ) : (
               <a className="btn btn-ghost" href={callHref} data-cta="call" data-pos={pos}>{callLabel}</a>

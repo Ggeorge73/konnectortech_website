@@ -31,5 +31,12 @@ ${production ? '' : '  X-Robots-Tag: noindex, nofollow\n'}
   Cache-Control: public, max-age=31536000, immutable
 `;
 fs.writeFileSync(path.join(out, '_headers'), headers);
+// Delivery records switched off (see `show` in src/lib/site.ts): remove the /proof/ pages, so those addresses
+// answer with the 404 page instead of an empty page. Nothing on the site links to them while the switch is off.
+const showProof = ['1', 'true'].includes(process.env.NEXT_PUBLIC_SHOW_PROOF);
+if (!showProof) {
+  fs.rmSync(path.join(out, 'proof'), { recursive: true, force: true });
+  fs.rmSync(path.join(out, 'proof.txt'), { force: true });
+}
 // Old section links on other pages of the previous single-page site keep working: /#services etc. are ids on the home page.
 console.log(`Wrote out/_headers (${production ? 'production' : 'preview, noindex'}).`);

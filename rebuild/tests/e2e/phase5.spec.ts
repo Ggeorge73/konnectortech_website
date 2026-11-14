@@ -128,7 +128,7 @@ test.describe('acceptance: the story', () => {
 });
 
 test.describe('accessibility pass (WCAG 2.2 AA, axe)', () => {
-  for (const path of ['/services/', '/private-sector/', '/privacy/', '/proof/delivery-record-01/', '/services/technology-sourcing/', '/this-page-does-not-exist/']) {
+  for (const path of ['/services/', '/private-sector/', '/privacy/', '/about/', '/services/technology-sourcing/', '/this-page-does-not-exist/']) {
     test(`no serious or critical issues on ${path}`, async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);

@@ -43,20 +43,53 @@ npm run build && npm run serve
 
 ## How to preview it online (without touching the live site)
 
-Create a **second** Cloudflare Pages project pointed at this repository and branch:
+The live Pages project (`konnector-website`) serves the repository root with no build step, so a branch preview of
+this pull request shows the **old** site. The rebuild is previewed from the branch `preview-rebuild`, which holds
+only the **built** files (`out/` plus `functions/`). Pages publishes it like any branch, at
+`https://preview-rebuild.konnector-website.pages.dev`. To refresh it after a change:
 
-- Root directory: `rebuild`
-- Build command: `npm run build`
-- Build output directory: `out`
+```bash
+PREVIEW_CONTENT=launch npm run build   # preview build (noindex, ?fps=1 readout) with exactly the launch content
+```
 
-It gets its own `*.pages.dev` address. The existing project (root `/`, no build) keeps serving the live site.
+then replace the contents of `preview-rebuild` with `out/`, `functions/` and its README, and push that branch.
+`PREVIEW_CONTENT=launch` drops draft items, as a production build does; leave it off to see drafts stamped.
+
+A second Pages project pointed at `rebuild` (build `npm run build`, output `out`) would also work, but needs a change in Cloudflare.
+
+## Keeping the source off the live site before launch
+
+Until the project's root directory is changed to `rebuild`, everything in the repository root is published, which
+would include this folder. `functions/rebuild/[[path]].js` at the repository root answers every `/rebuild/...` address
+with 404, so none of these source files can be downloaded from konnectortech.com, before or after the merge.
 
 ## Going live (only after approval)
 
-1. Supply the items under "What Konnector still needs to supply" and remove the `draft: true` flags.
-2. In the Pages project: root directory `rebuild`, build command `npm run build:production`, output `out`.
-3. Bind the `ENQUIRIES` KV namespace and set the variables below.
-4. Move the custom domain to that project. The old section links (`#services`, `#how`, `#sectors`, `#about`, `#contact`) keep working.
+1. In `konnector-website` → Settings → Variables and secrets (Production), set the variables below. `ENQUIRIES` is
+   already bound for the current site; check it is still listed under Bindings.
+2. In `konnector-website` → Settings → Build: root directory `rebuild`, build command `npm run build:production`,
+   build output directory `out`. Node comes from `rebuild/.node-version` (22).
+3. Merge the pull request. Pages builds `main` with the new settings and publishes the new site on the same domain.
+   The old section links (`#services`, `#how`, `#sectors`, `#about`, `#contact`) keep working.
+4. Rolling back: Pages → Deployments → the last old-site deployment → "Rollback to this deployment", then put the
+   build settings back (root `/`, no build command).
+
+The launch gate (`npm run build:production`) fails if the bot-check site key is missing, and, for any section switched
+back on, if its content is still draft.
+
+### Sections switched off for launch (owner decision, 14 Nov 2026)
+
+Delivery records, the credentials strip and procurement facts, the capability statement buttons and the people
+profiles are hidden until the content exists. While a section is off, its nav and footer links, buttons, launch checks
+and pages go with it (the frontier section stands in as scene 6, and `/proof/` answers 404). To bring one back, set its
+variable to `1` in the build settings and redeploy:
+
+| Variable | Brings back |
+| --- | --- |
+| `NEXT_PUBLIC_SHOW_PROOF` | Delivery records: home scene 6, `/proof/` pages, nav and footer links |
+| `NEXT_PUBLIC_SHOW_CREDENTIALS` | Credentials strip and the public-sector procurement facts table |
+| `NEXT_PUBLIC_SHOW_CAPABILITY_STATEMENT` | "Download / Request capability statement" buttons (needs `NEXT_PUBLIC_CAPABILITY_STATEMENT_URL` to download) |
+| `NEXT_PUBLIC_SHOW_PEOPLE` | "The people" on the About page |
 
 | Variable | Kind | Purpose |
 | --- | --- | --- |
@@ -64,7 +97,7 @@ It gets its own `*.pages.dev` address. The existing project (root `/`, no build)
 | `RESEND_API_KEY`, `NOTIFY_TO`, `NOTIFY_FROM` | server | Email to Konnector and the confirmation to the visitor. |
 | `TURNSTILE_SECRET_KEY` / `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | server / build | Invisible bot check. |
 | `LEAD_WEBHOOK_URL`, `LEAD_WEBHOOK_SECRET` | server | Optional signed push of each lead (stage "signal") for Konnector CRM. |
-| `NEXT_PUBLIC_BOOKING_URL` | build | Calendar link for "Book a 30-minute call". Until set, the button opens the contact form. |
+| `NEXT_PUBLIC_BOOKING_URL` | build | Optional calendar link for "Book a 30-minute call". Not used at launch: the button opens the contact form, which asks for times. |
 | `NEXT_PUBLIC_CAPABILITY_STATEMENT_URL` | build | PDF for "Download capability statement". Until set, the button reads "Request capability statement". |
 | `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | build | Turns on privacy-friendly analytics. Events are always recorded in `window.__ktEvents`. |
 | `NEXT_PUBLIC_HERO` | build | `A` (default) or `B` hero headline, for the post-launch headline test. |
@@ -73,12 +106,18 @@ It gets its own `*.pages.dev` address. The existing project (root `/`, no build)
 
 Nothing here is invented. Each missing item shows as a stamped **DRAFT** in preview builds and is left out of production builds.
 
+Not needed for launch (switched off, see above), wanted later:
+
 - **Proof:** at least two delivery records, one public and one private (`content/proof/*.md`).
 - **Credentials, registrations, NAICS codes, contract routes, people:** `content/company.json`.
-- **Capability statement PDF** and the **calendar booking link**.
+- **Capability statement PDF**, and optionally a **calendar booking link**.
+
+Settled:
+
 - **Frontier technology cards** (`content/frontier.json`): Koniku, QVITI and RSQ HOLO. Konnector is shown as the integrator, not the inventor. Wording checked and cleared by Gbenga on 12 Nov 2026. Text names only: no logos and no "partner" wording.
-- **Reply promise:** the site says "one business day" (the script's recommendation). Confirm or change it in `src/lib/site.ts` and `functions/api/contact.js`.
-- **Sign-off on the copy**, including the service pages, "How we deliver" and the privacy notice.
+- **Reply promise:** "one business day", confirmed by the owner on 14 Nov 2026 (`src/lib/site.ts`, `functions/api/contact.js`).
+- **Privacy notice:** draft approved on 14 Nov 2026, with a line naming Cloudflare Turnstile (invisible mode) and linking its Privacy Addendum.
+- **Contact form email:** `NOTIFY_TO` and `NOTIFY_FROM` are george@konnectortech.com; Resend sends from the konnectortech.com domain.
 
 ## Where this build differs from the script, and why
 

@@ -3,6 +3,22 @@
 
 export const IS_PRODUCTION = process.env.SITE_ENV === 'production';
 
+// ── Sections switched off until Konnector has the content (owner decision, 14 Nov 2026). ──
+// Each one is a light switch: while it is off, the section, its nav and footer links, its buttons and its
+// launch checks all disappear together, so no empty section or dead link is left behind.
+// To bring one back, set its variable to 1 in the build settings (or flip the default here) and rebuild.
+const on = (v: string | undefined) => v === '1' || v === 'true';
+export const show = {
+  // Delivery records: home scene 6 records, the /proof/ pages, nav and footer links.
+  proof: on(process.env.NEXT_PUBLIC_SHOW_PROOF),
+  // Credentials strip, plus the procurement facts table (registrations, NAICS codes, contract routes).
+  credentials: on(process.env.NEXT_PUBLIC_SHOW_CREDENTIALS),
+  // "Download / Request capability statement" buttons everywhere.
+  capabilityStatement: on(process.env.NEXT_PUBLIC_SHOW_CAPABILITY_STATEMENT),
+  // "The people" profiles on the About page.
+  people: on(process.env.NEXT_PUBLIC_SHOW_PEOPLE),
+} as const;
+
 export const site = {
   name: 'Konnector Tech',
   legalName: 'Konnector LLC',
@@ -28,11 +44,12 @@ export const site = {
   },
 
   // ── Items Konnector supplies. While one is null the site falls back to the enquiry form, so no button is dead. ──
-  // A calendar booking link for the 30-minute call (e.g. Microsoft Bookings or Calendly).
+  // A calendar booking link for the 30-minute call (e.g. Microsoft Bookings or Calendly). Not used at launch:
+  // every "Book a call" button opens the contact form (owner decision, 14 Nov 2026). Set it later to switch.
   bookingUrl: (process.env.NEXT_PUBLIC_BOOKING_URL || null) as string | null,
   // Path or URL of the capability statement PDF (e.g. '/konnector-capability-statement.pdf' placed in /public).
   capabilityStatementUrl: (process.env.NEXT_PUBLIC_CAPABILITY_STATEMENT_URL || null) as string | null,
-  // Reply promise shown under the form. The script recommends one business day, if the team can always keep it.
+  // Reply promise shown under the form and in the confirmation email. Confirmed by the owner on 14 Nov 2026.
   replyPromise: 'We reply within one business day.',
   replyPromiseShort: 'one business day',
 } as const;
@@ -40,8 +57,8 @@ export const site = {
 export const heroHeadline = process.env.NEXT_PUBLIC_HERO === 'B' ? site.hero.B : site.hero.A;
 
 export const callHref = site.bookingUrl ?? '/contact/?ask=call';
-// No button pretends to be something it is not: without a booking link the ask is "Request a call" and opens the form.
-export const callLabel = site.bookingUrl ? site.cta.call : 'Request a call';
+// Without a booking link, "Book a 30-minute call" opens the contact form, which asks for times and confirms the call.
+export const callLabel = site.cta.call;
 export const statementHref = site.capabilityStatementUrl ?? '/contact/?ask=statement';
 // With the PDF set, the button is a real download. Until then it is a request that opens the form.
 export const statementAttrs = site.capabilityStatementUrl ? { download: true } : {};
@@ -53,7 +70,10 @@ export const scenes = [
   { n: 3, id: 'services', name: 'The line', asks: 'Who can fix it?' },
   { n: 4, id: 'how', name: 'The run', asks: 'How do they work?' },
   { n: 5, id: 'sectors', name: 'Two doors', asks: 'Is it for me?' },
-  { n: 6, id: 'proof', name: 'Proof', asks: 'Can I trust them?' },
+  // While delivery records and credentials are switched off, the frontier section takes scene 6's place.
+  show.proof || show.credentials
+    ? { n: 6, id: 'proof', name: 'Proof', asks: 'Can I trust them?' }
+    : { n: 6, id: 'frontier', name: 'Frontier tech', asks: 'Can they land what is new?' },
   { n: 7, id: 'about', name: 'Transformation', asks: 'What do I do next?' },
 ] as const;
 
@@ -113,9 +133,9 @@ export const nav = [
   { label: 'Services', href: '/services/' },
   { label: 'How we deliver', href: '/how-we-deliver/' },
   { label: 'Sectors', href: '/#sectors' },
-  { label: 'Proof', href: '/proof/' },
+  ...(show.proof ? [{ label: 'Proof', href: '/proof/' }] : []),
   { label: 'About', href: '/about/' },
-] as const;
+];
 
 export const markStory =
   'Three points joined into one unbroken triangle. Some lines run straight, like the plan. Some bend, like the real world, with its turns and surprises. Every one still arrives. That is how we work: we take ownership from first plan to final handover, connect the people and technology in between, and deliver, end to end.';

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { callHref, heroHeadline, promises, sectors, site, stages, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
+import { callHref, heroHeadline, promises, sectors, show, site, stages, statementHref, statementLabel, callLabel, statementAttrs } from '@/lib/site';
 import { credentials, frontier, getProof, getServices } from '@/lib/content';
 import { FRONTIER_DISCLAIMER, FrontierCard } from '@/components/Frontier';
 import { ACCEPTED_AT, GATE_AT, SERVICE_AT } from '@/story/timeline';
@@ -36,6 +36,9 @@ export default function Home() {
   const services = getServices();
   const proof = getProof();
   const hasDraft = proof.some((p) => p.draft) || credentials.some((c) => c.draft);
+  // Scene 6 shows delivery records and credentials. While both are switched off (see `show` in lib/site.ts),
+  // the frontier section takes scene 6's place in the story, so there is no empty section and the 3D still rests there.
+  const proofScene = proof.length > 0 || credentials.length > 0 || !frontier.length;
 
   return (
     <>
@@ -143,8 +146,14 @@ export default function Home() {
               <SectorDoors />
               <div className="ctas">
                 <a className="btn btn-primary" href="#contact" data-cta="plan" data-pos="scene-5">{site.cta.main}</a>
-                <a className="btn btn-ghost" href={statementHref} {...statementAttrs} data-for="public" data-cta="statement" data-pos="scene-5">{statementLabel}</a>
-                <a className="btn btn-ghost" href={callHref} data-for="private" data-cta="call" data-pos="scene-5">{callLabel}</a>
+                {show.capabilityStatement ? (
+                  <>
+                    <a className="btn btn-ghost" href={statementHref} {...statementAttrs} data-for="public" data-cta="statement" data-pos="scene-5">{statementLabel}</a>
+                    <a className="btn btn-ghost" href={callHref} data-for="private" data-cta="call" data-pos="scene-5">{callLabel}</a>
+                  </>
+                ) : (
+                  <a className="btn btn-ghost" href={callHref} data-cta="call" data-pos="scene-5">{callLabel}</a>
+                )}
               </div>
               <p className="muted" style={{ margin: '14px 0 0', fontSize: '0.92rem' }}>
                 <Link href={sectors.public.href} data-for="public" style={{ display: 'block', padding: '4px 0' }}>More for public sector buyers</Link>
@@ -158,7 +167,7 @@ export default function Home() {
 
       {/* Frontier technology: an ordinary section between scenes 5 and 6. It leads scene 6, so the 3D rests from here on. */}
       {frontier.length ? (
-        <section className="frontier" id="frontier" data-scene-lead="6" aria-labelledby="frontier-title">
+        <section className="frontier" id="frontier" {...(proofScene ? { 'data-scene-lead': '6' } : { 'data-scene': '6' })} aria-labelledby="frontier-title">
           <div className="wrap">
             <p className="hud">Frontier technology</p>
             <h2 id="frontier-title">Frontier technology, landed.</h2>
@@ -180,6 +189,7 @@ export default function Home() {
       ) : null}
 
       {/* Scene 6: Proof (the evidence). Normal scrolling; the 3D rests here. */}
+      {proofScene ? (
       <section className="scene scene--proof" data-scene="6" id="proof" aria-labelledby="s6-title">
         <div className="wrap">
           <p className="hud">Scene 06 · <b>Proof</b></p>
@@ -199,6 +209,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      ) : null}
 
       {/* Scene 7: The transformation (logo reveal and the ask) */}
       <section className="scene scene--pinned scene--finale" data-scene="7" id="about" aria-labelledby="s7-title">

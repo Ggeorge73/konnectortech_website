@@ -30,8 +30,9 @@ test.describe('enquiry form', () => {
     await expect(sent).toContainText('Your enquiry is with us');
     await expect(sent).toContainText('ada@example.org');
     await expect(sent).toContainText('one business day');
-    await expect(sent.getByRole('link', { name: /capability statement/ })).toBeVisible();
-    await expect(sent.getByRole('link', { name: 'Request a call' })).toBeVisible();
+    // Capability statement is switched off for launch; "Book a 30-minute call" opens the form (owner decisions, 14 Nov 2026)
+    await expect(sent.getByRole('link', { name: /capability statement/ })).toHaveCount(0);
+    await expect(sent.getByRole('link', { name: 'Book a 30-minute call' })).toHaveAttribute('href', '/contact/?ask=call');
     const stored = await (await request.get('/__enquiries')).json();
     expect(stored.some(([k, v]: [string, string]) => k.startsWith('enquiry:') && v.includes('Example County') && v.includes('Public sector'))).toBe(true);
     expect(await events(page)).toEqual(expect.arrayContaining(['form_started', 'form_sent']));
@@ -118,7 +119,7 @@ test.describe('home page', () => {
     await expect(page.locator('[data-hud="gap-0"]')).toHaveCSS('opacity', '0.45');
   });
 
-  test('frontier technology: three cards between the sectors and the proof, as text only, with Konnector as the integrator', async ({ page }) => {
+  test('frontier technology: three cards after the sectors, standing in as scene 6, as text only, with Konnector as the integrator', async ({ page }) => {
     await page.goto('/?mode=brief');
     const section = page.locator('#frontier');
     await expect(section.getByRole('heading', { level: 2 })).toHaveText('Frontier technology, landed.');
@@ -143,10 +144,13 @@ test.describe('home page', () => {
     await expect(section.locator('img, svg')).toHaveCount(0);
     expect((await section.innerText()).toLowerCase()).not.toContain('partner');
     await expect(section).toContainText('We do not invent these devices');
-    // It sits after the sectors scene and before the proof
-    const order = await page.evaluate(() => ['sectors', 'frontier', 'proof'].map((id) => document.getElementById(id)!.getBoundingClientRect().top));
+    // It sits after the sectors scene and before the finale. With delivery records and credentials switched off,
+    // it is scene 6 itself, and the proof section is not on the page.
+    const order = await page.evaluate(() => ['sectors', 'frontier', 'about'].map((id) => document.getElementById(id)!.getBoundingClientRect().top));
     expect(order[0]).toBeLessThan(order[1]);
     expect(order[1]).toBeLessThan(order[2]);
+    await expect(section).toHaveAttribute('data-scene', '6');
+    await expect(page.locator('#proof')).toHaveCount(0);
     // Both sector pages show all three, each with that side's fit and a link back to its card on the home page
     for (const [path, fits] of [['/public-sector/', ['border screening', 'public health systems', 'teaching hospitals']], ['/private-sector/', ['Industrial sites', 'rehabilitation clinics', 'surgical centres']]] as const) {
       await page.goto(path);
@@ -163,11 +167,13 @@ test.describe('home page', () => {
   test('choosing a door sets the secondary button and the form sector, and is recorded', async ({ page }) => {
     await page.goto('/?mode=brief');
     const scene5 = page.locator('[data-scene="5"]');
-    await expect(scene5.getByRole('link', { name: /capability statement/ })).toBeVisible();
-    await expect(scene5.getByRole('link', { name: 'Request a call' })).toBeVisible(); // no choice: both
+    // Capability statement switched off for launch: the call button serves both doors
+    await expect(scene5.getByRole('link', { name: /capability statement/ })).toHaveCount(0);
+    await expect(scene5.getByRole('link', { name: 'Book a 30-minute call' })).toBeVisible();
+    await page.getByRole('button', { name: /^Public sector/ }).click();
+    await expect(scene5.getByRole('link', { name: 'Book a 30-minute call' })).toBeVisible();
     await page.getByRole('button', { name: /^Private sector/ }).click();
-    await expect(scene5.getByRole('link', { name: /capability statement/ })).toBeHidden();
-    await expect(scene5.getByRole('link', { name: 'Request a call' })).toBeVisible();
+    await expect(scene5.getByRole('link', { name: 'Book a 30-minute call' })).toBeVisible();
     await expect(page.getByRole('radio', { name: 'Private sector' })).toBeChecked();
     await page.getByRole('link', { name: 'Get a delivery plan' }).first().click();
     expect(await events(page)).toEqual(expect.arrayContaining(['brief_mode_opened', 'scene_reached', 'sector_chosen', 'cta_click']));
@@ -210,7 +216,7 @@ test.describe('home page', () => {
 });
 
 test.describe('accessibility (WCAG 2.2 AA, axe)', () => {
-  for (const path of ['/?mode=brief', '/contact/', '/public-sector/', '/services/project-and-program-delivery/', '/how-we-deliver/', '/proof/', '/about/']) {
+  for (const path of ['/?mode=brief', '/contact/', '/public-sector/', '/services/project-and-program-delivery/', '/how-we-deliver/', '/about/']) {
     test(`no serious or critical issues on ${path}`, async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(path);
@@ -228,4 +234,18 @@ test('search and sharing basics are present', async ({ page, request }) => {
   expect(await page.locator('script[type="application/ld+json"]').first().evaluate((el) => el.textContent)).toContain('ProfessionalService');
   expect((await request.get('/sitemap.xml')).ok()).toBe(true);
   expect((await request.get('/og.jpg')).ok()).toBe(true);
+});
+
+// Launch decisions (owner, 14 Nov 2026): delivery records, credentials and the capability statement are switched off
+// until the content exists, and the privacy notice names the bot check and links Cloudflare's addendum.
+test('launch: switched-off sections leave no section, link or button behind', async ({ page, request }) => {
+  expect((await request.get('/proof/')).status()).toBe(404);
+  for (const path of ['/', '/?mode=brief', '/about/', '/contact/', '/public-sector/', '/private-sector/', '/services/', '/how-we-deliver/']) {
+    await page.goto(path);
+    await expect(page.locator('a[href^="/proof"], a[href="#proof"], a[href*="ask=statement"]')).toHaveCount(0);
+    await expect(page.locator('.cred-strip, .record, table.facts, .stamp.draft, .draft-note')).toHaveCount(0);
+    expect((await page.locator('body').innerText()).toLowerCase()).not.toContain('capability statement');
+  }
+  await page.goto('/privacy/');
+  await expect(page.getByRole('link', { name: 'Cloudflare Turnstile Privacy Addendum' })).toHaveAttribute('href', 'https://www.cloudflare.com/turnstile-privacy-policy/');
 });

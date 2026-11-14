@@ -57,7 +57,7 @@ test('story mode starts where the browser has 3D, and falls back to brief mode w
 });
 
 test('supporting pages load with one main heading each', async ({ page }) => {
-  for (const path of ['/services/', '/services/systems-implementation-and-integration/', '/how-we-deliver/', '/public-sector/', '/private-sector/', '/proof/', '/about/', '/contact/', '/privacy/']) {
+  for (const path of ['/services/', '/services/systems-implementation-and-integration/', '/how-we-deliver/', '/public-sector/', '/private-sector/', '/about/', '/contact/', '/privacy/']) {
     const res = await page.goto(path);
     expect(res?.status(), path).toBe(200);
     await expect(page.locator('h1')).toHaveCount(1);

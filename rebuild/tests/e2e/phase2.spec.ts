@@ -107,7 +107,7 @@ test.describe('brief mode could go live by itself', () => {
     await expect(page.getByRole('link', { name: /Technology sourcing/ }).first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Send and get my plan' })).toBeVisible();
     await expect(page.locator('.still img').first()).toBeVisible();
-    for (const path of ['/services/', '/services/technology-sourcing/', '/how-we-deliver/', '/public-sector/', '/private-sector/', '/proof/', '/proof/delivery-record-01/', '/about/', '/contact/', '/privacy/']) {
+    for (const path of ['/services/', '/services/technology-sourcing/', '/how-we-deliver/', '/public-sector/', '/private-sector/', '/about/', '/contact/', '/privacy/']) {
       const res = await page.goto(path);
       expect(res?.status(), path).toBe(200);
       await expect(page.locator('h1')).toHaveCount(1);
