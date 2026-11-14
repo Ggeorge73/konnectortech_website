@@ -260,7 +260,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
   const overlay = useMemo(() => createOverlay(s, stage, hud), [s, stage, hud]);
   const sound = useMemo(createSound, []);
   const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, cubeFace: -1, cubeAt: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '', warmed: false, cubeDrawn: false, programs: 0, hist: new Uint32Array(401), statN: 0, statT: 0, statRung: '', hitch: 0, lastHitch: '', hitchBy: {} as Record<string, number>,
-    quiet: 0, ft: 0, held: 0, stillKey: new Float64Array(48), stillDrawn: false, still: false, warmCount: -1, warmedThisFrame: false, t0: 0, hitchScene: [0, 0, 0, 0, 0, 0, 0], uploads: 0, sizeKey: '', prev: { compiled: false, loading: false, upload: false, resized: false, cube: false, warm: false, script: 0, scene: 1 } }), []);
+    quiet: 0, ft: 0, held: 0, stillKey: new Float64Array(48), stillDrawn: false, still: false, warmCount: -1, warmedThisFrame: false, t0: 0, hitchScene: [0, 0, 0, 0, 0, 0, 0], uploads: 0, sizeKey: '', sizeSeen: '', prev: { compiled: false, loading: false, upload: false, resized: false, cube: false, warm: false, script: 0, scene: 1 } }), []);
   useEffect(() => () => { v.bloom?.dispose(); v.bloom = null; }, [v]);
   useEffect(() => {
     // Preview builds only: the readout is never part of a production build
@@ -332,6 +332,11 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     const W = (s.W = state.size.width), H = (s.H = state.size.height);
     s.dpr = state.viewport.dpr;
     s.mobile = W <= 860;
+    // A change of size (a foldable phone opened or closed, a phone turned) pauses the tier check and the ?fps=1 statistics
+    // for 2 seconds, as a tier change does: the frames around a resize are slow for reasons the visitor never sees again.
+    const sizeNow = `${W}x${H}@${s.dpr}`;
+    if (v.sizeSeen && v.sizeSeen !== sizeNow && s.frames > 5) v.tierAt = s.time;
+    v.sizeSeen = sizeNow;
     if (v.aspect !== W / H) {
       v.aspect = W / H;
       // Keep the horizontal field of view usable on tall phone screens
@@ -531,7 +536,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
         v.fpsEl.textContent = `TIER ${s.tier.toUpperCase()}${s.lowRes ? ' low-res' : ''} · scene ${s.sc + 1} · now ${Math.round(fps)} fps\n${line2}${line3}\n${v.still ? 'resting, no redraw' : `${v.calls} draws`} · ${state.size.width}x${state.size.height} @${s.dpr.toFixed(2)} · ${v.gpu}`;
         v.fpsT = 0; v.fpsN = 0;
       }
-      // Statistics leave out the first 4 seconds after load and 2 seconds after a tier change or the warm-up frame,
+      // Statistics leave out the first 4 seconds after load and 2 seconds after a tier change, a resize or the warm-up frame,
       // and start afresh when the tier changes, so each tier is judged by itself.
       const rungNow = s.tier + (s.lowRes ? '-low' : '');
       if (rungNow !== v.statRung) { v.statRung = rungNow; v.hist.fill(0); v.statN = 0; v.statT = 0; v.hitch = 0; v.lastHitch = ''; v.hitchScene.fill(0); for (const k in v.hitchBy) v.hitchBy[k] = 0; if (s.frames > 5) v.tierAt = s.time; }
@@ -592,16 +597,38 @@ class Boundary extends Component<{ onError: () => void; children: ReactNode }, {
 // How sharply the scene is drawn. The limit is on the number of pixels drawn, not only on the ratio, because a large
 // high-density laptop screen at ratio 2 is four times the work of the same scene at ratio 1.
 // Full: up to 1.5x and about 2.2 million pixels. Light: 1x and about 1.3 million. Lower resolution: 0.75 of Light.
+// Light on a touch screen: about 380,000 pixels, the size of an ordinary phone screen at 1x. An ordinary phone is drawn
+// exactly as before; a bigger touch screen, such as the inner screen of a foldable phone or a small tablet, is drawn a
+// little softer so that it costs the graphics chip about the same as an ordinary phone (never below 0.8 of the page's
+// own pixel size). The page text is not part of the 3D picture, so it stays as sharp as ever.
 function pixelRatio(tier: Tier, lowRes: boolean) {
   if (typeof window === 'undefined') return 1;
   const css = Math.max(1, window.innerWidth * window.innerHeight), device = window.devicePixelRatio || 1;
-  const full = Math.min(device, 1.5, Math.sqrt(2.2e6 / css)), light = Math.min(device, 1, Math.sqrt(1.3e6 / css));
-  return Math.max(0.5, tier === 'full' ? full : lowRes ? light * 0.75 : light);
+  const touch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+  const full = Math.min(device, 1.5, Math.sqrt(2.2e6 / css));
+  const light = touch ? Math.min(device, 1, Math.max(0.8, Math.sqrt(3.8e5 / css))) : Math.min(device, 1, Math.sqrt(1.3e6 / css));
+  const r = Math.max(0.5, tier === 'full' ? full : lowRes ? light * 0.75 : light);
+  return Math.round(r * 100) / 100; // rounded, so a tiny change in window size does not resize the canvas
+}
+
+// The drawing ratio depends on the window's size, so it is worked out again once a resize has settled (for example
+// when a foldable phone is opened), not on every one of the many resize events the opening sends.
+function useSettledRatio(tier: Tier, lowRes: boolean) {
+  const [ratio, setRatio] = useState(() => pixelRatio(tier, lowRes));
+  useEffect(() => {
+    setRatio(pixelRatio(tier, lowRes));
+    let timer = 0;
+    const onResize = () => { window.clearTimeout(timer); timer = window.setTimeout(() => setRatio(pixelRatio(tier, lowRes)), 250); };
+    window.addEventListener('resize', onResize);
+    return () => { window.clearTimeout(timer); window.removeEventListener('resize', onResize); };
+  }, [tier, lowRes]);
+  return ratio;
 }
 
 export default function Story({ stage, hud, onFail }: Props) {
   const [tier, setTier] = useState<Tier>(() => (document.documentElement.dataset.tier === 'full' ? 'full' : 'light'));
   const [lowRes, setLowRes] = useState(false);
+  const ratio = useSettledRatio(tier, lowRes);
   const rung = useRef({ tier, lowRes });
   rung.current = { tier, lowRes };
   const stepDown = () => {
@@ -630,17 +657,20 @@ export default function Story({ stage, hud, onFail }: Props) {
     }
     const st = (scroll.current = createScrollTime(tier));
     let pageH = document.body.offsetHeight;
-    const ro = new ResizeObserver(() => { const h = document.body.offsetHeight; if (h !== pageH) { pageH = h; st.refresh(); } }); // only when the page height really changed
+    // Only when the page height really changed, and once it has settled: opening a foldable phone reflows the text over
+    // several frames, and re-measuring every scene on each of them would stall the story.
+    let timer = 0;
+    const ro = new ResizeObserver(() => { window.clearTimeout(timer); timer = window.setTimeout(() => { const h = document.body.offsetHeight; if (h !== pageH) { pageH = h; st.refresh(); } }, 200); });
     ro.observe(document.body);
-    return () => { ro.disconnect(); st.kill(); scroll.current = null; };
+    return () => { window.clearTimeout(timer); ro.disconnect(); st.kill(); scroll.current = null; };
   }, [s, tier]);
 
   return (
     <Boundary onError={() => onFail('no-webgl')}>
       <Canvas
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none', touchAction: 'auto' }}
-        dpr={pixelRatio(tier, lowRes)}
-        resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }} // do not re-measure the canvas on every scroll event: it forces a layout pass
+        dpr={ratio}
+        resize={{ scroll: false, debounce: { scroll: 50, resize: 150 } }} // do not re-measure the canvas on every scroll event (it forces a layout pass), and resize it once a burst of resize events settles, such as a foldable phone opening
         gl={{ antialias: tier === 'full', alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: s.capture }}
         camera={{ fov: 40, near: 0.05, far: 220, position: [0, 1.55, 2.2] }}
         flat

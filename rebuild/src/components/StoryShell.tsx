@@ -57,7 +57,9 @@ export function StoryShell() {
       while (reached < current + 1) track('scene_reached', { scene: ++reached });
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
-    const onResize = () => { tl.measure(); onScroll(); };
+    // Re-measured once per frame at most: opening a foldable phone sends a burst of resize events.
+    let measureRaf = 0;
+    const onResize = () => { if (!measureRaf) measureRaf = requestAnimationFrame(() => { measureRaf = 0; tl.measure(); onScroll(); }); };
     const onMode = () => {
       const keep = Math.min(SCENE_COUNT - 1, Math.floor(tl.getT()));
       if (getMode() === 'story') start(); else stop();
@@ -79,6 +81,7 @@ export function StoryShell() {
       cancelled = true;
       window.clearTimeout(idle);
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(measureRaf);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
       window.removeEventListener('kt:mode', onMode);
