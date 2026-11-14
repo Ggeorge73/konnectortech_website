@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+test-results
+playwright-report
+next-env.d.ts
+*.tsbuildinfo
+.wrangler
+.frames-*
+test-results-*

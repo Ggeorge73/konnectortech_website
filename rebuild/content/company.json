@@ -1,0 +1,22 @@
+{
+  "_readme": "Facts Konnector supplies. Only list what is true and current. Items with draft:true are shown stamped DRAFT in preview builds and are left out of production builds (npm run build:production). Remove the draft flag once an item holds real, confirmed content.",
+  "credentials": [
+    { "label": "Certification", "value": "To be supplied by Konnector", "draft": true },
+    { "label": "Registration", "value": "To be supplied by Konnector", "draft": true },
+    { "label": "Partner badge", "value": "To be supplied by Konnector", "draft": true }
+  ],
+  "registrations": [
+    { "label": "Unique Entity ID (UEI)", "value": "To be supplied", "draft": true },
+    { "label": "CAGE code", "value": "To be supplied", "draft": true },
+    { "label": "State of Georgia supplier registration", "value": "To be supplied", "draft": true }
+  ],
+  "naicsCodes": [
+    { "label": "NAICS codes", "value": "To be supplied", "draft": true }
+  ],
+  "contractRoutes": [
+    { "label": "Contract routes held today", "value": "To be supplied", "draft": true }
+  ],
+  "people": [
+    { "name": "Principal profile", "role": "Role to be supplied", "bio": "A short profile and photo, supplied by Konnector.", "draft": true }
+  ]
+}

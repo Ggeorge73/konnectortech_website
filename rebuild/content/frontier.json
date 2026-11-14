@@ -1,0 +1,98 @@
+{
+  "note": "Frontier technologies Konnector helps customers integrate. Konnector is the integrator, not the inventor. All three serve both public and private sector customers. Each 'what' line is the company's own description, attributed to it. Wording checked against the companies' sites and cleared by Gbenga on 12 Nov 2026. Text names only: no logos and no 'partner' wording. To hold a card back from production again, add \"draft\": true to it.",
+  "items": [
+    {
+      "key": "koniku",
+      "company": "Koniku",
+      "product": "Konikore",
+      "url": "https://koniku.com/",
+      "what": "Koniku describes Konikore as a smell processor: living neurons on a chip that read molecules in the air, built to detect explosive and chemical threats.",
+      "fitPublic": "Defense, aviation and border screening, critical infrastructure, emergency response.",
+      "fitPrivate": "Industrial sites, venues and public spaces, private security, logistics.",
+      "steps": [
+        [
+          "Assessment",
+          "where detection is needed and what it has to connect to"
+        ],
+        [
+          "Systems and data",
+          "alerts routed into your screening and security systems"
+        ],
+        [
+          "Compliance path",
+          "the approvals your authority requires, mapped and tracked"
+        ],
+        [
+          "Training",
+          "operators and supervisors ready before day one"
+        ],
+        [
+          "Go-live",
+          "tested against the acceptance criteria you set"
+        ]
+      ]
+    },
+    {
+      "key": "qviti",
+      "company": "QVITI",
+      "product": "tES devices",
+      "url": "https://www.qviti.com/technology-qviti",
+      "what": "QVITI makes non-invasive brain stimulation (tES) devices for clinical therapy, rehabilitation and research. It lists CorStim and nuroStym today, with QStim and VRstim to come.",
+      "fitPublic": "Government and military hospitals, public health systems, university research.",
+      "fitPrivate": "Private hospitals, rehabilitation clinics, research centres.",
+      "steps": [
+        [
+          "Assessment",
+          "clinical or research use, the setting and who will run it"
+        ],
+        [
+          "Systems and data",
+          "session records into your clinical or research systems"
+        ],
+        [
+          "Compliance path",
+          "your medical device, privacy and ethics requirements"
+        ],
+        [
+          "Training",
+          "clinicians and technicians ready before day one"
+        ],
+        [
+          "Go-live",
+          "tested against the acceptance criteria you set"
+        ]
+      ]
+    },
+    {
+      "key": "rsq-holo",
+      "company": "RSQ HOLO",
+      "product": "AR goggles for the operating room",
+      "url": "https://www.rsqholo.com/",
+      "what": "RSQ HOLO describes its product as an augmented operating room: goggles that place 3D imaging and patient record (EMR) information in the surgeon's view.",
+      "fitPublic": "Government and military hospitals, teaching hospitals.",
+      "fitPrivate": "Private hospitals and surgical centres.",
+      "steps": [
+        [
+          "Assessment",
+          "theatres, imaging sources and the network they run on"
+        ],
+        [
+          "Systems and data",
+          "imaging and patient record feeds reaching the goggles securely"
+        ],
+        [
+          "Compliance path",
+          "your medical device, privacy and infection control requirements"
+        ],
+        [
+          "Training",
+          "surgical teams and IT ready before day one"
+        ],
+        [
+          "Go-live",
+          "tested against the acceptance criteria you set"
+        ]
+      ]
+    }
+  ]
+}

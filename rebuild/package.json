@@ -1,0 +1,40 @@
+{
+  "name": "konnectortech-rebuild",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "node scripts/prebuild.mjs && next build && node scripts/postbuild.mjs",
+    "build:production": "SITE_ENV=production npm run build",
+    "launch-check": "SITE_ENV=production node scripts/prebuild.mjs --check-only",
+    "serve": "node scripts/serve.mjs",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "node --test tests/unit/*.mjs",
+    "test:e2e": "playwright test --trace off",
+    "budgets": "node scripts/check-budgets.mjs",
+    "stills": "node scripts/capture-stills.mjs",
+    "verify": "npm run typecheck && npm run test:unit && npm run build && npm run budgets && npm run test:e2e"
+  },
+  "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/sora": "^5.3.0",
+    "@react-three/fiber": "^9.8.2",
+    "gray-matter": "^4.0.3",
+    "gsap": "^3.15.1",
+    "marked": "^18.2.0",
+    "next": "^15.5.29",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/three": "^0.187.0",
+    "typescript": "^5.9.3"
+  }
+}

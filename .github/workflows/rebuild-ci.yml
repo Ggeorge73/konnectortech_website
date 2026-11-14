@@ -1,0 +1,28 @@
+name: Rebuild CI
+on:
+  pull_request:
+    paths: ['rebuild/**', '.github/workflows/rebuild-ci.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rebuild
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rebuild/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run build
+      - run: npm run budgets
+      - run: npm run test:e2e
+        env:
+          PW_ALL_BROWSERS: '1' # also run the cross-browser spec in Firefox and WebKit (Safari's engine)
