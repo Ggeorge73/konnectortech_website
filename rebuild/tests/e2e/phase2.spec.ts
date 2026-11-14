@@ -104,7 +104,7 @@ test.describe('brief mode could go live by itself', () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto('/');
-    for (const h of ['Every system you own, finally working as one.', 'One accountable partner. One unbroken line.', 'Real projects bend. Ours still arrive.', 'Public mission or private enterprise?', 'Delivered, not promised.', 'Every line reaches its point.']) await expect(page.getByRole('heading', { name: h })).toBeVisible();
+    for (const h of ['Every system you own, finally working as one.', 'One accountable partner. One unbroken line.', 'Real projects bend. Ours still arrive.', 'Public mission or private enterprise?', 'Frontier technology, landed.', 'Every line reaches its point.']) await expect(page.getByRole('heading', { name: h })).toBeVisible();
     await expect(page.locator('.service-list a')).toHaveCount(4);
     await expect(page.getByRole('link', { name: /Technology sourcing/ }).first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Send and get my plan' })).toBeVisible();

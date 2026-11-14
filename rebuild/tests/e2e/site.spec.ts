@@ -71,7 +71,7 @@ test.describe('home page', () => {
       'One accountable partner. One unbroken line.',
       'Real projects bend. Ours still arrive.',
       'Public mission or private enterprise?',
-      'Delivered, not promised.',
+      'Frontier technology, landed.',
       'Every line reaches its point.',
     ]) await expect(page.getByRole('heading', { name: text })).toBeVisible();
     for (const stage of ['Discover', 'Plan', 'Build and integrate', 'Test and accept', 'Hand over']) await expect(page.locator('.gate-list').getByText(stage, { exact: true })).toBeVisible();

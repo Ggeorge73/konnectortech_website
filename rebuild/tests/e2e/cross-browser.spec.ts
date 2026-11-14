@@ -7,7 +7,7 @@ test('brief mode: every scene reads and the enquiry is stored and confirmed', as
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/?mode=brief');
-  for (const h of ['Every system you own, finally working as one.', 'One accountable partner. One unbroken line.', 'Real projects bend. Ours still arrive.', 'Public mission or private enterprise?', 'Delivered, not promised.', 'Every line reaches its point.']) await expect(page.getByRole('heading', { name: h })).toBeVisible();
+  for (const h of ['Every system you own, finally working as one.', 'One accountable partner. One unbroken line.', 'Real projects bend. Ours still arrive.', 'Public mission or private enterprise?', 'Frontier technology, landed.', 'Every line reaches its point.']) await expect(page.getByRole('heading', { name: h })).toBeVisible();
   await page.getByRole('button', { name: /^Public sector/ }).click();
   await expect(page.getByRole('radio', { name: 'Public sector' })).toBeChecked();
   const marker = `Cross-browser check ${test.info().project.name}`;
