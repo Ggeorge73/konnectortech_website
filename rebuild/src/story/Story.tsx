@@ -260,7 +260,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
   const overlay = useMemo(() => createOverlay(s, stage, hud), [s, stage, hud]);
   const sound = useMemo(createSound, []);
   const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, cubeFace: -1, cubeAt: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '', warmed: false, cubeDrawn: false, programs: 0, hist: new Uint32Array(401), statN: 0, statT: 0, statRung: '', hitch: 0, lastHitch: '', hitchBy: {} as Record<string, number>,
-    quiet: 0, ft: 0, held: 0, warmCount: -1, warmedThisFrame: false, t0: 0, hitchScene: [0, 0, 0, 0, 0, 0, 0], uploads: 0, sizeKey: '', prev: { compiled: false, loading: false, upload: false, resized: false, cube: false, warm: false, script: 0, scene: 1 } }), []);
+    quiet: 0, ft: 0, held: 0, stillKey: new Float64Array(48), stillDrawn: false, still: false, warmCount: -1, warmedThisFrame: false, t0: 0, hitchScene: [0, 0, 0, 0, 0, 0, 0], uploads: 0, sizeKey: '', prev: { compiled: false, loading: false, upload: false, resized: false, cube: false, warm: false, script: 0, scene: 1 } }), []);
   useEffect(() => () => { v.bloom?.dispose(); v.bloom = null; }, [v]);
   useEffect(() => {
     // Preview builds only: the readout is never part of a production build
@@ -460,7 +460,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
       env.cam.position.copy(ball.position);
       drawFace(-1);
     } else {
-      if (v.cubeFace < 0 && ((changed && v.cubeTick - v.cubeAt >= (s.tier === 'full' ? 6 : 12)) || v.cubeTick - v.cubeAt >= 600)) {
+      if (v.cubeFace < 0 && ((changed && v.cubeTick - v.cubeAt >= (s.tier === 'full' ? 6 : 12)) || (v.cubeTick - v.cubeAt >= 600 && !s.finale))) {
         v.cubePos.copy(ball.position); v.cubeSweep = s.sweep; v.cubeFinale = s.finale; v.cubeFace = 0; v.cubeAt = v.cubeTick;
         env.cam.position.copy(ball.position);
         env.cam.updateMatrixWorld();
@@ -475,9 +475,27 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
       if (v.cubeFace >= 0 && !faceNow && late) v.held++;
       if (v.cubeFace >= 0 && faceNow && s.stageOpacity > 0.001 && !document.hidden) { v.held = 0; drawFace(v.cubeFace); v.cubeFace = v.cubeFace === 5 ? -1 : v.cubeFace + 1; }
     }
+    // Scene 7 at rest. Once the mark has formed and the scroll and pointer are still, every frame would draw exactly the
+    // same picture. Skipping that draw leaves the last picture on screen (the browser keeps showing it) and frees the
+    // graphics chip for the page itself, which on a phone was where the remaining slow frames came from.
+    // A frame is drawn whenever anything that shapes the picture changes, and always when a reflection face or the warm-up
+    // drew this frame (both need the full draw after them).
+    let still = false;
+    if (s.finale && s.forcedT === null && !s.capture && !v.warmedThisFrame && !v.cubeDrawn) {
+      const k = v.stillKey;
+      let i = 0, same = true;
+      const put = (x: number) => { if (Math.abs(k[i] - x) > 1e-6) { same = false; k[i] = x; } i++; };
+      for (const e of camera.matrixWorld.elements) put(e);
+      for (const e of camera.projectionMatrix.elements) put(e);
+      put(ball.position.x); put(ball.position.y); put(ball.position.z);
+      put(s.tau); put(s.done); put(s.arriveP); put(s.hover); put(s.sweep); put(s.stageOpacity); put(s.q); put(W); put(H); put(s.dpr);
+      still = same && v.stillDrawn;
+      v.stillDrawn = true;
+    } else v.stillDrawn = false;
+    v.still = still;
     // Draw. Not while the tab is hidden, and not during scene 6, where the 3D rests.
     state.gl.info.autoReset = false;
-    if (s.stageOpacity > 0.001 && !document.hidden) {
+    if (s.stageOpacity > 0.001 && !document.hidden && !still) {
       state.gl.render(state.scene, camera);
       if (s.tier === 'full' && !s.lowRes) {
         v.bloom ??= createBloom(state.gl, state.scene, camera);
@@ -510,7 +528,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
           line2 = `average ${Math.round(v.statN / v.statT)} · 1% low ${Math.round(n / t)} · ${v.statN} frames`;
           line3 = `\nstalls over 50 ms: ${v.hitch}${by ? ` (${by})` : ''}${v.hitch ? ` · by scene ${v.hitchScene.map((c, i) => (c ? `${i + 1}×${c}` : '')).filter(Boolean).join(' ')}` : ''}${v.lastHitch ? ` · last ${v.lastHitch}` : ''}`;
         }
-        v.fpsEl.textContent = `TIER ${s.tier.toUpperCase()}${s.lowRes ? ' low-res' : ''} · scene ${s.sc + 1} · now ${Math.round(fps)} fps\n${line2}${line3}\n${v.calls} draws · ${state.size.width}x${state.size.height} @${s.dpr.toFixed(2)} · ${v.gpu}`;
+        v.fpsEl.textContent = `TIER ${s.tier.toUpperCase()}${s.lowRes ? ' low-res' : ''} · scene ${s.sc + 1} · now ${Math.round(fps)} fps\n${line2}${line3}\n${v.still ? 'resting, no redraw' : `${v.calls} draws`} · ${state.size.width}x${state.size.height} @${s.dpr.toFixed(2)} · ${v.gpu}`;
         v.fpsT = 0; v.fpsN = 0;
       }
       // Statistics leave out the first 4 seconds after load and 2 seconds after a tier change or the warm-up frame,
