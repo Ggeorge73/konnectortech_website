@@ -148,12 +148,14 @@ html[data-mode='story'] .hud-layer { display: block; position: fixed; inset: 0; 
 .hud-tag { font: 500 0.66rem var(--font-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--text); background: rgba(7, 12, 24, 0.86); border: 1px solid var(--wire-line); border-radius: 5px; padding: 4px 8px; white-space: nowrap; translate: -50% -140%; }
 .hud-tag.is-lit { border-color: var(--cyan); color: var(--cyan-soft); }
 /* Gap markers (scene 2, story mode): a ring on the gap itself with its label above. All three are always marked; the chosen one grows and glows. */
-.hud-tag.is-gap { border-color: var(--amber); color: var(--amber); font-size: 0.74rem; font-weight: 700; transition: font-size 0.2s ease-out, padding 0.2s ease-out, background-color 0.2s ease-out, color 0.2s ease-out, box-shadow 0.2s ease-out; }
+/* The chosen gap grows with scale, not font size or padding: those would make the browser redo layout on every frame of the change.
+   It grows about its pin (50% across, 140% down), so the pin stays on the gap. */
+.hud-tag.is-gap { border-color: var(--amber); color: var(--amber); font-size: 0.74rem; font-weight: 700; transform-origin: 50% 140%; transition: scale 0.2s ease-out, background-color 0.2s ease-out, color 0.2s ease-out, box-shadow 0.2s ease-out; }
 .hud-tag.is-gap::after, .hud-tag.is-gap::before { content: ''; position: absolute; left: 50%; top: 140%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border: 2px solid var(--amber); border-radius: 50%; }
 .hud-tag.is-gap::after { background: rgba(255, 176, 32, 0.22); }
 .hud-tag.is-gap::before { opacity: 0; }
-.hud-tag.is-gap.is-hot { background: var(--amber); color: #1a1000; font-size: 1rem; padding: 6px 12px; z-index: 1; box-shadow: 0 0 18px rgba(255, 176, 32, 0.7); }
-.hud-tag.is-gap.is-hot::after { width: 26px; height: 26px; margin: -13px 0 0 -13px; background: var(--amber); box-shadow: 0 0 14px 4px rgba(255, 176, 32, 0.75); }
+.hud-tag.is-gap.is-hot { background: var(--amber); color: #1a1000; scale: 1.35; z-index: 1; box-shadow: 0 0 18px rgba(255, 176, 32, 0.7); }
+.hud-tag.is-gap.is-hot::after { background: var(--amber); box-shadow: 0 0 14px 4px rgba(255, 176, 32, 0.75); }
 /* Brief mode: the same three gaps as numbered rings on the still frame */
 .gap-pin { position: absolute; left: var(--x); top: var(--y); width: 22px; height: 22px; margin: -11px 0 0 -11px; display: grid; place-items: center; font: 700 0.6rem var(--font-mono); color: var(--amber); background: rgba(7, 12, 24, 0.92); border: 2px solid var(--amber); border-radius: 50%; transition: scale 0.2s ease-out, background-color 0.2s ease-out, color 0.2s ease-out, box-shadow 0.2s ease-out, opacity 0.2s; }
 .gap-pin::before { content: ''; position: absolute; inset: -2px; border: 2px solid var(--amber); border-radius: 50%; opacity: 0; }

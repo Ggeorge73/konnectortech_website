@@ -39,10 +39,14 @@ export function StoryShell() {
     const start = () => { if (!cancelled && getMode() === 'story') setPlaying(true); };
     const stop = () => { setPlaying(false); delete d.dataset.storyReady; };
 
+    let lastProgress = '';
     const update = () => {
       raf = 0;
       const T = tl.getT();
-      d.style.setProperty('--progress', String(Math.min(1, T / SCENE_COUNT)));
+      // Written on the rail, not on <html>: a custom property set on the root makes the browser restyle the whole page,
+      // and this runs on every scrolled frame. Only written when it changes.
+      const progress = Math.min(1, T / SCENE_COUNT).toFixed(4);
+      if (progress !== lastProgress) { lastProgress = progress; rail.current?.style.setProperty('--progress', progress); }
       const current = Math.min(SCENE_COUNT - 1, Math.floor(T));
       rail.current?.querySelectorAll('a').forEach((a, i) => {
         a.classList.toggle('is-passed', i < current);

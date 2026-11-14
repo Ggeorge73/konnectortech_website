@@ -260,7 +260,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
   const overlay = useMemo(() => createOverlay(s, stage, hud), [s, stage, hud]);
   const sound = useMemo(createSound, []);
   const v = useMemo(() => ({ pos: new THREE.Vector3(), look: new THREE.Vector3(), a: new THREE.Vector3(), top: new THREE.Vector2(), slow: 0, measured: 0, cubeTick: 0, cubeFace: -1, cubeAt: 0, locked: 0, tau: 0, aspect: 0, fpsEl: null as HTMLElement | null, fpsT: 0, fpsN: 0, fpsMin: 999, bloom: null as Bloom | null, bloomW: 0, bloomH: 0, cubePos: new THREE.Vector3(1e9, 0, 0), cubeSweep: -1, cubeFinale: false, calls: 0, winT: 0, winN: 0, bad: 0, best: 0, tierAt: 0, fpsMinScene: 0, fpsMinTier: '', gpu: '', warmed: false, cubeDrawn: false, programs: 0, hist: new Uint32Array(401), statN: 0, statT: 0, statRung: '', hitch: 0, lastHitch: '', hitchBy: {} as Record<string, number>,
-    quiet: 0, warmCount: -1, warmedThisFrame: false, t0: 0, hitchScene: [0, 0, 0, 0, 0, 0, 0], uploads: 0, sizeKey: '', prev: { compiled: false, loading: false, upload: false, resized: false, cube: false, warm: false, script: 0, scene: 1 } }), []);
+    quiet: 0, ft: 0, held: 0, warmCount: -1, warmedThisFrame: false, t0: 0, hitchScene: [0, 0, 0, 0, 0, 0, 0], uploads: 0, sizeKey: '', prev: { compiled: false, loading: false, upload: false, resized: false, cube: false, warm: false, script: 0, scene: 1 } }), []);
   useEffect(() => () => { v.bloom?.dispose(); v.bloom = null; }, [v]);
   useEffect(() => {
     // Preview builds only: the readout is never part of a production build
@@ -465,7 +465,15 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
         env.cam.position.copy(ball.position);
         env.cam.updateMatrixWorld();
       }
-      if (v.cubeFace >= 0 && s.stageOpacity > 0.001 && !document.hidden) { drawFace(v.cubeFace); v.cubeFace = v.cubeFace === 5 ? -1 : v.cubeFace + 1; }
+      // Light: one face every other frame, so two heavier frames never come back to back and the graphics chip gets a
+      // light frame to catch up in. The whole reflection still refreshes as often as before (one refresh per 12 frames).
+      // On any tier, a face waits a frame when the last frame ran late, so a slow frame is not followed by a heavier one.
+      // ("Late" is judged against this device's own usual frame time, and a face is never held back more than 3 times.)
+      v.ft = v.ft ? v.ft + (Math.min(delta, 0.1) - v.ft) * 0.05 : Math.min(delta, 0.1);
+      const late = delta > v.ft * 1.4 && v.held < 3;
+      const faceNow = (s.tier === 'full' || v.cubeTick % 2 === 0) && !late;
+      if (v.cubeFace >= 0 && !faceNow && late) v.held++;
+      if (v.cubeFace >= 0 && faceNow && s.stageOpacity > 0.001 && !document.hidden) { v.held = 0; drawFace(v.cubeFace); v.cubeFace = v.cubeFace === 5 ? -1 : v.cubeFace + 1; }
     }
     // Draw. Not while the tab is hidden, and not during scene 6, where the 3D rests.
     state.gl.info.autoReset = false;

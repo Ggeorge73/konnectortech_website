@@ -32,6 +32,18 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
     cache.set(key, { at: s.time, v });
     return v;
   };
+  // Label and panel sizes come from a ResizeObserver, which reports them after the browser's own layout. Reading
+  // offsetWidth or offsetHeight inside the frame instead makes the browser lay the page out there and then, mid-frame:
+  // on a phone that was enough to miss a screen refresh in scene 2.
+  const sizes = new WeakMap<Element, { w: number; h: number }>();
+  const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver((entries) => {
+    for (const e of entries) {
+      const b = e.borderBoxSize?.[0];
+      sizes.set(e.target, b ? { w: b.inlineSize, h: b.blockSize } : { w: e.contentRect.width, h: e.contentRect.height });
+    }
+  });
+  for (const e of [...sysEls, ...serviceLis]) ro?.observe(e);
+  const sizeOf = (e: HTMLElement) => sizes.get(e) ?? { w: 0, h: 0 };
   const panelRight = () => (sidePanel ? measured('p3', () => sidePanel.getBoundingClientRect().right) : 0);
   const scanPanel = document.querySelector<HTMLElement>('[data-scene="2"] .panel');
   const scanPanelRight = () => (scanPanel && !s.mobile && s.T < 2.1 ? Math.max(0, measured('p2', () => scanPanel.getBoundingClientRect().right)) : 0);
@@ -96,7 +108,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
         SYSTEM_ANCHORS.forEach((a, i) => {
           tmp.set(a.x < 0 ? a.x * 0.85 : a.x * 1.25, TAG_Y[i], a.z);
           const ok = project(tmp);
-          const w = measured(`tag${i}`, () => sysEls[i].offsetWidth) || 110, h = 24;
+          const w = sizeOf(sysEls[i]).w || 110, h = 24;
           const x = clamp(scr.x, Math.min(left + w / 2, s.W - w / 2 - 8), s.W - w / 2 - 8);
           let y = clamp(scr.y, 96, s.H - 40);
           for (let n = 0; n < 30 && boxes.some(([x0, y0, x1, y1]) => x - w / 2 < x1 + 8 && x + w / 2 > x0 - 8 && y - h < y1 + 4 && y > y0 - 4); n++) y -= 10;
@@ -127,7 +139,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
           const slot = onCount - 1 - i; // newest panel rides closest to the sphere
           const u = Math.min(s.u - 0.007, Math.max(dockU[i], s.u - (0.009 + 0.0095 * slot)));
           project(s.path.curve.getPointAt(clamp(u)));
-          const px = scr.x, py = scr.y, above = i % 2 === 0, w = 280, h = measured(`li${i}`, () => li.offsetHeight) || 80;
+          const px = scr.x, py = scr.y, above = i % 2 === 0, w = 280, h = sizeOf(li).h || 80;
           // Find the nearest free place: first on the panel's own side of the line, then the other side, then further along.
           const minX = panelRight() + 14, maxX = s.W - w - 14, minY = 78, maxY = s.H - h - 12;
           const free = (xx: number, yy: number) => yy >= minY && yy <= maxY && !taken.some(([x0, y0, x1, y1]) => xx < x1 + 10 && xx + w > x0 - 10 && yy < y1 + 10 && yy + h > y0 - 10);
@@ -164,6 +176,7 @@ export function createOverlay(s: Director, stage: HTMLElement, hud: HTMLElement)
       }
     },
     dispose() {
+      ro?.disconnect();
       Array.from(hud.children).forEach((c) => ((c as HTMLElement).style.opacity = '0'));
       serviceLis.forEach((li) => { li.classList.remove('is-docked'); li.style.transform = ''; });
     },
