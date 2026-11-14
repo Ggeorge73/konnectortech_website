@@ -15,7 +15,7 @@ const SECTORS = ['Public sector', 'Private sector', 'Not sure yet'];
 const RATE_LIMIT = 5;
 const RATE_WINDOW = 600; // seconds (KV's minimum TTL is 60)
 const DEFAULT_FROM = 'Konnector Tech Website <website@konnectortech.com>';
-const REPLY_PROMISE = 'one business day';
+const REPLY_PROMISE = 'one business day'; // confirmed by the owner, 14 Nov 2026
 
 /** Schema validation. Returns { value } or { errors } keyed by field, in plain words. */
 export function validate(data) {
