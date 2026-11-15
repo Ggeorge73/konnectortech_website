@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/prebuild.mjs && next build && node scripts/postbuild.mjs",
-    "build:production": "SITE_ENV=production npm run build",
+    "build:production": "node scripts/build-production.mjs",
     "launch-check": "SITE_ENV=production node scripts/prebuild.mjs --check-only",
     "serve": "node scripts/serve.mjs",
     "typecheck": "tsc --noEmit",

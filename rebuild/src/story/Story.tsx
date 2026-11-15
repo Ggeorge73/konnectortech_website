@@ -318,7 +318,7 @@ function Loop({ s, env, scroll, stage, hud, onFail, onStepDown }: { s: Director;
     s.step(v.t0, dt, scroll.current?.getT() ?? 0);
     let locked = 0;
     for (const on of s.gateOn) if (on) locked++;
-    if (locked > v.locked && s.frames > 5) sound.click(); // a soft click when a ring locks
+    if (locked > v.locked && s.frames > 5) sound.tick(); // a soft tick when a ring locks
     v.locked = locked;
     sound.tone(Math.abs(s.tau - v.tau) > 1e-4 ? s.tau : -1); // a rising tone for the transformation
     if (v.tau < 0.98 && s.tau >= 0.98) sound.click();
